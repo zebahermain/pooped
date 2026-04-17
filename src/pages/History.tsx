@@ -1,24 +1,14 @@
 import { useEffect, useState } from "react";
 import { AppShell } from "@/components/AppShell";
-import { getLogs, type PoopLog } from "@/lib/storage";
+import { BRISTOL_META, COLOR_META, getLogs, type PoopLog } from "@/lib/storage";
+import { ChevronDown } from "lucide-react";
 
-const colorHex: Record<string, string> = {
-  brown: "#7B4A1E",
-  yellow: "#D4A53A",
-  green: "#5C8A3A",
-  black: "#2A1F1A",
-  red: "#A23B2C",
-  pale: "#C9BBA8",
-};
-
-const formatDate = (ts: number) => {
-  const d = new Date(ts);
-  return d.toLocaleDateString(undefined, {
+const formatDate = (ts: number) =>
+  new Date(ts).toLocaleDateString(undefined, {
     weekday: "short",
     month: "short",
     day: "numeric",
   });
-};
 
 const formatTime = (ts: number) =>
   new Date(ts).toLocaleTimeString(undefined, {
@@ -31,6 +21,7 @@ const scoreColor = (s: number) =>
 
 const History = () => {
   const [logs, setLogs] = useState<PoopLog[]>([]);
+  const [openId, setOpenId] = useState<string | null>(null);
 
   useEffect(() => {
     setLogs(getLogs());
@@ -38,7 +29,7 @@ const History = () => {
 
   return (
     <AppShell>
-      <header className="mb-6">
+      <header className="mb-6 pr-14">
         <p className="text-sm text-muted-foreground">Your journey</p>
         <h1 className="text-2xl font-bold">History</h1>
       </header>
@@ -53,41 +44,68 @@ const History = () => {
         </div>
       ) : (
         <div className="flex flex-col gap-3">
-          {logs.map((log) => (
-            <div
-              key={log.id}
-              className="flex items-center gap-4 rounded-2xl bg-card p-4 shadow-card"
-            >
-              <div
-                className="h-12 w-12 shrink-0 rounded-full shadow-soft"
-                style={{ backgroundColor: colorHex[log.color] }}
-              />
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between gap-2">
-                  <span className="font-semibold">{formatDate(log.timestamp)}</span>
-                  <span className={`text-lg font-bold ${scoreColor(log.score)}`}>
-                    {log.score}
-                  </span>
+          {logs.map((log) => {
+            const open = openId === log.id;
+            const meta = COLOR_META[log.color];
+            const bristol = BRISTOL_META[log.bristolType];
+            return (
+              <button
+                key={log.id}
+                onClick={() => setOpenId(open ? null : log.id)}
+                className="rounded-2xl bg-card p-4 text-left shadow-card border border-border transition-all"
+              >
+                <div className="flex items-center gap-4">
+                  <div
+                    className="h-12 w-12 shrink-0 rounded-full border border-border"
+                    style={{ backgroundColor: meta.hex }}
+                  />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-semibold">{formatDate(log.timestamp)}</span>
+                      <span className={`text-lg font-bold ${scoreColor(log.gutScore)}`}>
+                        {log.gutScore}
+                      </span>
+                    </div>
+                    <div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
+                      <span className="rounded-full bg-secondary px-2 py-0.5 font-semibold">
+                        Type {log.bristolType}
+                      </span>
+                      <span>•</span>
+                      <span>{meta.short}</span>
+                      <span>•</span>
+                      <span>{formatTime(log.timestamp)}</span>
+                    </div>
+                  </div>
+                  <ChevronDown
+                    className={`h-5 w-5 shrink-0 text-muted-foreground transition-transform ${
+                      open ? "rotate-180" : ""
+                    }`}
+                  />
                 </div>
-                <div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
-                  <span>Type {log.bristolType}</span>
-                  <span>•</span>
-                  <span className="capitalize">{log.color}</span>
-                  <span>•</span>
-                  <span>{formatTime(log.timestamp)}</span>
-                </div>
-                {log.notes && (
-                  <p className="mt-2 truncate text-xs italic text-muted-foreground">
-                    "{log.notes}"
-                  </p>
+                {open && (
+                  <div className="mt-4 space-y-2 border-t border-border pt-4 text-sm">
+                    <Row label="Bristol">
+                      Type {log.bristolType} — {bristol.label}
+                    </Row>
+                    <Row label="Color">{meta.label}</Row>
+                    <Row label="Frequency">#{log.frequency} of the day</Row>
+                    {log.notes && <Row label="Notes">{log.notes}</Row>}
+                  </div>
                 )}
-              </div>
-            </div>
-          ))}
+              </button>
+            );
+          })}
         </div>
       )}
     </AppShell>
   );
 };
+
+const Row = ({ label, children }: { label: string; children: React.ReactNode }) => (
+  <div className="flex justify-between gap-3">
+    <span className="text-muted-foreground">{label}</span>
+    <span className="text-right font-medium text-foreground">{children}</span>
+  </div>
+);
 
 export default History;

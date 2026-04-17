@@ -1,40 +1,35 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { AppShell } from "@/components/AppShell";
 import {
-  calculateScore,
+  BRISTOL_META,
+  COLOR_META,
+  calculateGutScore,
+  getProfile,
+  getTodaysLogs,
   saveLog,
   type StoolColor,
-  type TimeOfDay,
 } from "@/lib/storage";
 
-const bristolTypes = [
-  { type: 1, emoji: "🪨", label: "Hard lumps", desc: "Severe constipation" },
-  { type: 2, emoji: "🥜", label: "Lumpy sausage", desc: "Mild constipation" },
-  { type: 3, emoji: "🌽", label: "Cracked sausage", desc: "Normal" },
-  { type: 4, emoji: "🌭", label: "Smooth sausage ✅", desc: "Ideal" },
-  { type: 5, emoji: "🫧", label: "Soft blobs", desc: "Lacking fiber" },
-  { type: 6, emoji: "🥣", label: "Mushy", desc: "Mild diarrhea" },
-  { type: 7, emoji: "💧", label: "Liquid", desc: "Diarrhea" },
+const colorOrder: StoolColor[] = [
+  "medium_brown",
+  "dark_brown",
+  "light_brown",
+  "green",
+  "yellow",
+  "red",
+  "black",
+  "pale",
 ];
 
-const colors: { id: StoolColor; label: string; hex: string }[] = [
-  { id: "brown", label: "Brown ✅", hex: "#7B4A1E" },
-  { id: "yellow", label: "Yellow", hex: "#D4A53A" },
-  { id: "green", label: "Green", hex: "#5C8A3A" },
-  { id: "black", label: "Black", hex: "#2A1F1A" },
-  { id: "red", label: "Red", hex: "#A23B2C" },
-  { id: "pale", label: "Pale/Grey", hex: "#C9BBA8" },
-];
-
-const times: { id: TimeOfDay; label: string; emoji: string }[] = [
-  { id: "morning", label: "Morning", emoji: "🌅" },
-  { id: "afternoon", label: "Afternoon", emoji: "☀️" },
-  { id: "evening", label: "Evening", emoji: "🌆" },
-  { id: "night", label: "Night", emoji: "🌙" },
+const freqOptions = [
+  { n: 1, label: "First time" },
+  { n: 2, label: "2nd time" },
+  { n: 3, label: "3rd time" },
+  { n: 4, label: "4 or more" },
 ];
 
 const LogEntry = () => {
@@ -42,38 +37,45 @@ const LogEntry = () => {
   const [step, setStep] = useState(1);
   const [bristol, setBristol] = useState<number | null>(null);
   const [color, setColor] = useState<StoolColor | null>(null);
-  const [time, setTime] = useState<TimeOfDay | null>(null);
+  const [frequency, setFrequency] = useState<number | null>(null);
   const [notes, setNotes] = useState("");
 
+  useEffect(() => {
+    if (!getProfile()) navigate("/onboarding", { replace: true });
+    // pre-suggest frequency
+    const today = getTodaysLogs().length;
+    setFrequency(Math.min(today + 1, 4));
+  }, [navigate]);
+
   const submit = () => {
-    if (!bristol || !color || !time) return;
-    const score = calculateScore(bristol, color, time);
-    const now = new Date();
-    saveLog({
+    if (!bristol || !color || !frequency) return;
+    const todayCount = getTodaysLogs().length + 1;
+    const score = calculateGutScore(bristol, color, todayCount);
+    const log = {
       id: crypto.randomUUID(),
-      date: now.toISOString().slice(0, 10),
-      timestamp: now.getTime(),
+      timestamp: Date.now(),
       bristolType: bristol,
       color,
-      timeOfDay: time,
-      notes: notes || undefined,
-      score,
-    });
-    navigate(`/result/${score}`);
+      frequency,
+      notes: notes.trim() || undefined,
+      gutScore: score,
+    };
+    saveLog(log);
+    navigate(`/result/${log.id}`);
   };
 
   const canContinue =
     (step === 1 && bristol) ||
     (step === 2 && color) ||
-    (step === 3 && time) ||
+    (step === 3 && frequency) ||
     step === 4;
 
   return (
     <AppShell>
-      <header className="mb-6 flex items-center gap-3">
+      <header className="mb-6 flex items-center gap-3 pr-12">
         <button
           onClick={() => (step === 1 ? navigate("/") : setStep(step - 1))}
-          className="rounded-full bg-card p-2 shadow-card"
+          className="rounded-full bg-card p-2 shadow-card border border-border"
           aria-label="Back"
         >
           <ArrowLeft className="h-5 w-5" />
@@ -97,28 +99,37 @@ const LogEntry = () => {
         <div className="animate-fade-in">
           <h2 className="text-2xl font-bold">Pick your Bristol type</h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Which one looked most like yours?
+            Which one looks most like yours?
           </p>
-          <div className="mt-5 grid grid-cols-1 gap-3">
-            {bristolTypes.map((b) => (
-              <button
-                key={b.type}
-                onClick={() => setBristol(b.type)}
-                className={`flex items-center gap-4 rounded-2xl border-2 bg-card p-4 text-left transition-bounce ${
-                  bristol === b.type
-                    ? "border-primary shadow-warm scale-[1.01]"
-                    : "border-transparent shadow-card"
-                }`}
-              >
-                <span className="text-3xl">{b.emoji}</span>
-                <div className="flex-1">
-                  <div className="font-semibold">
-                    Type {b.type}: {b.label}
+          <div className="mt-5 flex flex-col gap-3">
+            {Object.entries(BRISTOL_META).map(([typeStr, b]) => {
+              const type = parseInt(typeStr, 10);
+              const selected = bristol === type;
+              return (
+                <button
+                  key={type}
+                  onClick={() => setBristol(type)}
+                  className={`flex items-center gap-4 rounded-2xl border-2 bg-card p-4 text-left transition-bounce ${
+                    selected
+                      ? "border-primary shadow-warm scale-[1.01]"
+                      : "border-transparent shadow-card"
+                  }`}
+                >
+                  <span className="text-3xl">{b.emoji}</span>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="font-semibold">Type {type}</span>
+                      {b.ideal && (
+                        <span className="rounded-full bg-success/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-success">
+                          Ideal
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-xs text-muted-foreground">{b.label}</div>
                   </div>
-                  <div className="text-xs text-muted-foreground">{b.desc}</div>
-                </div>
-              </button>
-            ))}
+                </button>
+              );
+            })}
           </div>
         </div>
       )}
@@ -127,47 +138,54 @@ const LogEntry = () => {
         <div className="animate-fade-in">
           <h2 className="text-2xl font-bold">What color was it?</h2>
           <p className="mt-1 text-sm text-muted-foreground">Brown is healthy.</p>
-          <div className="mt-5 grid grid-cols-2 gap-3">
-            {colors.map((c) => (
-              <button
-                key={c.id}
-                onClick={() => setColor(c.id)}
-                className={`flex flex-col items-center gap-3 rounded-2xl border-2 bg-card p-4 transition-bounce ${
-                  color === c.id
-                    ? "border-primary shadow-warm scale-[1.02]"
-                    : "border-transparent shadow-card"
-                }`}
-              >
-                <div
-                  className="h-16 w-16 rounded-full shadow-soft"
-                  style={{ backgroundColor: c.hex }}
-                />
-                <span className="text-sm font-semibold">{c.label}</span>
-              </button>
-            ))}
+          <div className="mt-5 grid grid-cols-2 gap-4">
+            {colorOrder.map((c) => {
+              const meta = COLOR_META[c];
+              const selected = color === c;
+              return (
+                <button
+                  key={c}
+                  onClick={() => setColor(c)}
+                  className={`flex flex-col items-center gap-3 rounded-2xl border-2 bg-card p-4 transition-bounce ${
+                    selected
+                      ? "border-primary shadow-warm scale-[1.03]"
+                      : "border-border/40 shadow-card"
+                  }`}
+                >
+                  <div
+                    className={`h-16 w-16 rounded-full border-2 ${
+                      selected ? "ring-4 ring-primary/40" : "border-border"
+                    }`}
+                    style={{ backgroundColor: meta.hex }}
+                  />
+                  <span className="text-center text-xs font-semibold leading-tight">
+                    {meta.label}
+                  </span>
+                </button>
+              );
+            })}
           </div>
         </div>
       )}
 
       {step === 3 && (
         <div className="animate-fade-in">
-          <h2 className="text-2xl font-bold">What time of day?</h2>
+          <h2 className="text-2xl font-bold">How many times today?</h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Morning logs score higher.
+            Counting this one.
           </p>
           <div className="mt-5 grid grid-cols-2 gap-3">
-            {times.map((t) => (
+            {freqOptions.map((f) => (
               <button
-                key={t.id}
-                onClick={() => setTime(t.id)}
-                className={`flex flex-col items-center gap-2 rounded-2xl border-2 bg-card p-6 transition-bounce ${
-                  time === t.id
+                key={f.n}
+                onClick={() => setFrequency(f.n)}
+                className={`rounded-2xl border-2 bg-card p-6 text-center font-semibold transition-bounce ${
+                  frequency === f.n
                     ? "border-primary shadow-warm scale-[1.02]"
                     : "border-transparent shadow-card"
                 }`}
               >
-                <span className="text-4xl">{t.emoji}</span>
-                <span className="font-semibold">{t.label}</span>
+                {f.label}
               </button>
             ))}
           </div>
@@ -183,7 +201,7 @@ const LogEntry = () => {
           <Textarea
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
-            placeholder="e.g. Felt bloated after lunch..."
+            placeholder="Any food, stress, or context to note?"
             className="mt-5 min-h-[140px] rounded-2xl border-border bg-card text-base shadow-card"
           />
         </div>
