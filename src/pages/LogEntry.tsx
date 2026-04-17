@@ -7,6 +7,7 @@ import { AppShell } from "@/components/AppShell";
 import {
   BRISTOL_META,
   COLOR_META,
+  TAG_OPTIONS,
   calculateGutScore,
   getProfile,
   getTodaysLogs,
@@ -38,14 +39,17 @@ const LogEntry = () => {
   const [bristol, setBristol] = useState<number | null>(null);
   const [color, setColor] = useState<StoolColor | null>(null);
   const [frequency, setFrequency] = useState<number | null>(null);
+  const [tags, setTags] = useState<string[]>([]);
   const [notes, setNotes] = useState("");
 
   useEffect(() => {
     if (!getProfile()) navigate("/onboarding", { replace: true });
-    // pre-suggest frequency
     const today = getTodaysLogs().length;
     setFrequency(Math.min(today + 1, 4));
   }, [navigate]);
+
+  const toggleTag = (id: string) =>
+    setTags((prev) => (prev.includes(id) ? prev.filter((t) => t !== id) : [...prev, id]));
 
   const submit = () => {
     if (!bristol || !color || !frequency) return;
@@ -57,6 +61,7 @@ const LogEntry = () => {
       bristolType: bristol,
       color,
       frequency,
+      tags: tags.length ? tags : undefined,
       notes: notes.trim() || undefined,
       gutScore: score,
     };
@@ -64,11 +69,13 @@ const LogEntry = () => {
     navigate(`/result/${log.id}`);
   };
 
+  const TOTAL_STEPS = 5;
   const canContinue =
     (step === 1 && bristol) ||
     (step === 2 && color) ||
     (step === 3 && frequency) ||
-    step === 4;
+    step === 4 ||
+    step === 5;
 
   return (
     <AppShell>
@@ -82,7 +89,7 @@ const LogEntry = () => {
         </button>
         <div className="flex-1">
           <div className="flex h-2 gap-1">
-            {[1, 2, 3, 4].map((s) => (
+            {[1, 2, 3, 4, 5].map((s) => (
               <div
                 key={s}
                 className={`h-full flex-1 rounded-full transition-all ${
@@ -91,7 +98,7 @@ const LogEntry = () => {
               />
             ))}
           </div>
-          <p className="mt-2 text-xs text-muted-foreground">Step {step} of 4</p>
+          <p className="mt-2 text-xs text-muted-foreground">Step {step} of {TOTAL_STEPS}</p>
         </div>
       </header>
 
@@ -194,9 +201,50 @@ const LogEntry = () => {
 
       {step === 4 && (
         <div className="animate-fade-in">
+          <h2 className="text-2xl font-bold">Anything from today?</h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Tap all that apply — we'll find patterns over time.
+          </p>
+          {(["food", "drink", "lifestyle", "symptom"] as const).map((cat) => (
+            <div key={cat} className="mt-5">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                {cat === "food"
+                  ? "🍽️ Food"
+                  : cat === "drink"
+                  ? "🥤 Drink"
+                  : cat === "lifestyle"
+                  ? "🌿 Lifestyle"
+                  : "⚠️ Symptoms"}
+              </h3>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {TAG_OPTIONS.filter((t) => t.category === cat).map((t) => {
+                  const active = tags.includes(t.id);
+                  return (
+                    <button
+                      key={t.id}
+                      onClick={() => toggleTag(t.id)}
+                      className={`flex items-center gap-1.5 rounded-full border-2 px-3 py-1.5 text-sm font-medium transition-bounce ${
+                        active
+                          ? "border-primary bg-primary/15 text-foreground scale-[1.03]"
+                          : "border-border bg-card text-muted-foreground"
+                      }`}
+                    >
+                      <span>{t.emoji}</span>
+                      <span>{t.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {step === 5 && (
+        <div className="animate-fade-in">
           <h2 className="text-2xl font-bold">Any notes?</h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Optional — food, mood, symptoms.
+            Optional — anything else worth remembering.
           </p>
           <Textarea
             value={notes}
@@ -208,7 +256,7 @@ const LogEntry = () => {
       )}
 
       <div className="mt-8">
-        {step < 4 ? (
+        {step < TOTAL_STEPS ? (
           <Button
             variant="hero"
             size="xl"

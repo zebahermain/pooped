@@ -25,9 +25,71 @@ export interface PoopLog {
   bristolType: number; // 1-7
   color: StoolColor;
   frequency: number; // which # of the day (1,2,3,4)
+  tags?: string[];
   notes?: string;
   gutScore: number;
 }
+
+export const TAG_OPTIONS: { id: string; label: string; emoji: string; category: "food" | "drink" | "lifestyle" | "symptom" }[] = [
+  { id: "dairy", label: "Dairy", emoji: "🧀", category: "food" },
+  { id: "gluten", label: "Gluten", emoji: "🍞", category: "food" },
+  { id: "spicy", label: "Spicy", emoji: "🌶️", category: "food" },
+  { id: "fiber", label: "High fiber", emoji: "🥦", category: "food" },
+  { id: "meat", label: "Red meat", emoji: "🥩", category: "food" },
+  { id: "sugar", label: "Sugar", emoji: "🍬", category: "food" },
+  { id: "fried", label: "Fried food", emoji: "🍟", category: "food" },
+  { id: "fruit", label: "Fruit", emoji: "🍎", category: "food" },
+  { id: "alcohol", label: "Alcohol", emoji: "🍺", category: "drink" },
+  { id: "coffee", label: "Coffee", emoji: "☕", category: "drink" },
+  { id: "water", label: "Lots of water", emoji: "💧", category: "drink" },
+  { id: "stress", label: "Stress", emoji: "😰", category: "lifestyle" },
+  { id: "exercise", label: "Exercise", emoji: "🏃", category: "lifestyle" },
+  { id: "travel", label: "Travel", emoji: "✈️", category: "lifestyle" },
+  { id: "poor_sleep", label: "Poor sleep", emoji: "😴", category: "lifestyle" },
+  { id: "bloating", label: "Bloating", emoji: "🎈", category: "symptom" },
+  { id: "cramps", label: "Cramps", emoji: "⚡", category: "symptom" },
+  { id: "nausea", label: "Nausea", emoji: "🤢", category: "symptom" },
+  { id: "urgency", label: "Urgency", emoji: "🏃‍♂️", category: "symptom" },
+];
+
+export const getTagMeta = (id: string) => TAG_OPTIONS.find((t) => t.id === id);
+
+export interface TagCorrelation {
+  tagId: string;
+  label: string;
+  emoji: string;
+  count: number;
+  avgWithTag: number;
+  avgWithoutTag: number;
+  delta: number;
+}
+
+export const getTagCorrelations = (logs: PoopLog[]): TagCorrelation[] => {
+  if (logs.length < 3) return [];
+  const overallAvg = logs.reduce((s, l) => s + l.gutScore, 0) / logs.length;
+  const result: TagCorrelation[] = [];
+  for (const tag of TAG_OPTIONS) {
+    const withTag = logs.filter((l) => l.tags?.includes(tag.id));
+    const withoutTag = logs.filter((l) => !l.tags?.includes(tag.id));
+    if (withTag.length < 2) continue;
+    const avgWith = withTag.reduce((s, l) => s + l.gutScore, 0) / withTag.length;
+    const avgWithout = withoutTag.length
+      ? withoutTag.reduce((s, l) => s + l.gutScore, 0) / withoutTag.length
+      : overallAvg;
+    result.push({
+      tagId: tag.id,
+      label: tag.label,
+      emoji: tag.emoji,
+      count: withTag.length,
+      avgWithTag: Math.round(avgWith),
+      avgWithoutTag: Math.round(avgWithout),
+      delta: Math.round(avgWith - avgWithout),
+    });
+  }
+  return result.sort(
+    (a, b) => Math.abs(b.delta) - Math.abs(a.delta) || b.count - a.count
+  );
+};
 
 export interface StreakData {
   currentStreak: number;
