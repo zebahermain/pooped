@@ -1,7 +1,14 @@
 import { useEffect, useState } from "react";
-import { AppShell } from "@/components/AppShell";
-import { BRISTOL_META, COLOR_META, getLogs, type PoopLog } from "@/lib/storage";
 import { ChevronDown } from "lucide-react";
+import { AppShell } from "@/components/AppShell";
+import { TagCorrelations } from "@/components/TagCorrelations";
+import {
+  BRISTOL_META,
+  COLOR_META,
+  getLogs,
+  getTagMeta,
+  type PoopLog,
+} from "@/lib/storage";
 
 const formatDate = (ts: number) =>
   new Date(ts).toLocaleDateString(undefined, {
@@ -19,9 +26,12 @@ const formatTime = (ts: number) =>
 const scoreColor = (s: number) =>
   s >= 70 ? "text-success" : s >= 40 ? "text-warning" : "text-danger";
 
+type Tab = "logs" | "insights";
+
 const History = () => {
   const [logs, setLogs] = useState<PoopLog[]>([]);
   const [openId, setOpenId] = useState<string | null>(null);
+  const [tab, setTab] = useState<Tab>("logs");
 
   useEffect(() => {
     setLogs(getLogs());
@@ -29,12 +39,31 @@ const History = () => {
 
   return (
     <AppShell>
-      <header className="mb-6 pr-14">
+      <header className="mb-4 pr-14">
         <p className="text-sm text-muted-foreground">Your journey</p>
         <h1 className="text-2xl font-bold">History</h1>
       </header>
 
-      {logs.length === 0 ? (
+      {/* Tabs */}
+      <div className="mb-5 flex gap-1 rounded-2xl bg-muted p-1">
+        {(["logs", "insights"] as Tab[]).map((t) => (
+          <button
+            key={t}
+            onClick={() => setTab(t)}
+            className={`flex-1 rounded-xl py-2 text-sm font-semibold transition-bounce ${
+              tab === t
+                ? "bg-card text-foreground shadow-card"
+                : "text-muted-foreground"
+            }`}
+          >
+            {t === "logs" ? "📋 Logs" : "✨ Insights"}
+          </button>
+        ))}
+      </div>
+
+      {tab === "insights" ? (
+        <TagCorrelations logs={logs} />
+      ) : logs.length === 0 ? (
         <div className="mt-20 flex flex-col items-center text-center">
           <span className="text-6xl">📭</span>
           <h2 className="mt-4 text-lg font-semibold">No logs yet</h2>
@@ -75,6 +104,28 @@ const History = () => {
                       <span>•</span>
                       <span>{formatTime(log.timestamp)}</span>
                     </div>
+                    {log.tags && log.tags.length > 0 && (
+                      <div className="mt-2 flex flex-wrap gap-1">
+                        {log.tags.slice(0, 4).map((id) => {
+                          const t = getTagMeta(id);
+                          if (!t) return null;
+                          return (
+                            <span
+                              key={id}
+                              className="inline-flex items-center gap-1 rounded-full bg-accent px-2 py-0.5 text-[10px] font-medium text-accent-foreground"
+                            >
+                              <span>{t.emoji}</span>
+                              <span>{t.label}</span>
+                            </span>
+                          );
+                        })}
+                        {log.tags.length > 4 && (
+                          <span className="text-[10px] text-muted-foreground">
+                            +{log.tags.length - 4}
+                          </span>
+                        )}
+                      </div>
+                    )}
                   </div>
                   <ChevronDown
                     className={`h-5 w-5 shrink-0 text-muted-foreground transition-transform ${
@@ -89,6 +140,14 @@ const History = () => {
                     </Row>
                     <Row label="Color">{meta.label}</Row>
                     <Row label="Frequency">#{log.frequency} of the day</Row>
+                    {log.tags && log.tags.length > 0 && (
+                      <Row label="Tags">
+                        {log.tags
+                          .map((id) => getTagMeta(id)?.label)
+                          .filter(Boolean)
+                          .join(", ")}
+                      </Row>
+                    )}
                     {log.notes && <Row label="Notes">{log.notes}</Row>}
                   </div>
                 )}
