@@ -301,8 +301,8 @@ export const BRISTOL_META: Record<
   1: { label: "Hard pellets", emoji: "🪨" },
   2: { label: "Lumpy sausage", emoji: "🥜" },
   3: { label: "Cracked sausage", emoji: "🌽", ideal: true },
-  4: { label: "Smooth sausage ✅", emoji: "🌭", ideal: true },
-  5: { label: "Soft blobs", emoji: "🫧" },
+  4: { label: "Smooth sausage", emoji: "🌭", ideal: true },
+  5: { label: "Soft blobs", emoji: "☁️" },
   6: { label: "Fluffy mush", emoji: "🥣" },
   7: { label: "Liquid 💧", emoji: "💧" },
 };
