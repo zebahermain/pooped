@@ -7,6 +7,7 @@ import { AppShell } from "@/components/AppShell";
 import {
   BRISTOL_META,
   COLOR_META,
+  TAG_OPTIONS,
   calculateGutScore,
   getProfile,
   getTodaysLogs,
@@ -38,14 +39,17 @@ const LogEntry = () => {
   const [bristol, setBristol] = useState<number | null>(null);
   const [color, setColor] = useState<StoolColor | null>(null);
   const [frequency, setFrequency] = useState<number | null>(null);
+  const [tags, setTags] = useState<string[]>([]);
   const [notes, setNotes] = useState("");
 
   useEffect(() => {
     if (!getProfile()) navigate("/onboarding", { replace: true });
-    // pre-suggest frequency
     const today = getTodaysLogs().length;
     setFrequency(Math.min(today + 1, 4));
   }, [navigate]);
+
+  const toggleTag = (id: string) =>
+    setTags((prev) => (prev.includes(id) ? prev.filter((t) => t !== id) : [...prev, id]));
 
   const submit = () => {
     if (!bristol || !color || !frequency) return;
@@ -57,6 +61,7 @@ const LogEntry = () => {
       bristolType: bristol,
       color,
       frequency,
+      tags: tags.length ? tags : undefined,
       notes: notes.trim() || undefined,
       gutScore: score,
     };
@@ -64,11 +69,13 @@ const LogEntry = () => {
     navigate(`/result/${log.id}`);
   };
 
+  const TOTAL_STEPS = 5;
   const canContinue =
     (step === 1 && bristol) ||
     (step === 2 && color) ||
     (step === 3 && frequency) ||
-    step === 4;
+    step === 4 ||
+    step === 5;
 
   return (
     <AppShell>
