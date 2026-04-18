@@ -7,6 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { AppShell } from "@/components/AppShell";
 import { GutScoreRing } from "@/components/GutScoreRing";
 import { WeeklyChart } from "@/components/WeeklyChart";
+import { DoctorCard } from "@/components/DoctorCard";
 import { toast } from "@/hooks/use-toast";
 import {
   addToWaitlist,
@@ -82,6 +83,8 @@ const Home = () => {
       <section className="mt-8">
         <WeeklyChart data={weekly} />
       </section>
+
+      <DoctorCard />
 
       <button
         onClick={() => setProOpen(true)}
