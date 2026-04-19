@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { AppShell } from "@/components/AppShell";
 import { toast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
+import { pushProfileToCloud } from "@/lib/profileSync";
 import {
   getAverageScore,
   getLogs,
@@ -32,6 +34,7 @@ const freqs: { id: FrequencyPref; label: string }[] = [
 
 const ProfilePage = () => {
   const navigate = useNavigate();
+  const { user, signOut } = useAuth();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [editing, setEditing] = useState(false);
 
@@ -58,6 +61,7 @@ const ProfilePage = () => {
   const save = () => {
     saveProfile(profile);
     setEditing(false);
+    if (user) pushProfileToCloud(user.id).catch(console.error);
     toast({ title: "Profile saved" });
   };
 
@@ -176,6 +180,29 @@ const ProfilePage = () => {
               label="Frequency"
               value={freqs.find((f) => f.id === profile.frequencyPref)?.label || "—"}
             />
+          </div>
+        )}
+      </section>
+
+      <section className="mt-6 rounded-3xl bg-card p-5 shadow-card border border-border">
+        <h3 className="font-bold">Account</h3>
+        {user ? (
+          <div className="mt-3 space-y-3">
+            <p className="text-sm text-muted-foreground">
+              Signed in as <span className="font-medium text-foreground">{user.email}</span>
+            </p>
+            <Button variant="outline" className="w-full" onClick={() => signOut()}>
+              Sign out
+            </Button>
+          </div>
+        ) : (
+          <div className="mt-3 space-y-3">
+            <p className="text-sm text-muted-foreground">
+              You're using Pooped as a guest. Create an account to sync across devices and never lose your data.
+            </p>
+            <Button variant="hero" className="w-full" onClick={() => navigate("/auth")}>
+              Create free account →
+            </Button>
           </div>
         )}
       </section>
