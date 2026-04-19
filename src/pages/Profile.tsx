@@ -183,6 +183,29 @@ const ProfilePage = () => {
           </div>
         )}
       </section>
+
+      <section className="mt-6 rounded-3xl bg-card p-5 shadow-card border border-border">
+        <h3 className="font-bold">Account</h3>
+        {user ? (
+          <div className="mt-3 space-y-3">
+            <p className="text-sm text-muted-foreground">
+              Signed in as <span className="font-medium text-foreground">{user.email}</span>
+            </p>
+            <Button variant="outline" className="w-full" onClick={() => signOut()}>
+              Sign out
+            </Button>
+          </div>
+        ) : (
+          <div className="mt-3 space-y-3">
+            <p className="text-sm text-muted-foreground">
+              You're using Pooped as a guest. Create an account to sync across devices and never lose your data.
+            </p>
+            <Button variant="hero" className="w-full" onClick={() => navigate("/auth")}>
+              Create free account →
+            </Button>
+          </div>
+        )}
+      </section>
     </AppShell>
   );
 };
