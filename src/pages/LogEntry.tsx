@@ -7,6 +7,8 @@ import { AppShell } from "@/components/AppShell";
 import {
   BRISTOL_META,
   COLOR_META,
+  FOOD_TAG_OPTIONS,
+  SYMPTOM_OPTIONS,
   TAG_OPTIONS,
   calculateGutScore,
   getProfile,
@@ -33,6 +35,8 @@ const freqOptions = [
   { n: 4, label: "4 or more" },
 ];
 
+const TOTAL_STEPS = 6;
+
 const LogEntry = () => {
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
@@ -40,6 +44,8 @@ const LogEntry = () => {
   const [color, setColor] = useState<StoolColor | null>(null);
   const [frequency, setFrequency] = useState<number | null>(null);
   const [tags, setTags] = useState<string[]>([]);
+  const [foodTags, setFoodTags] = useState<string[]>([]);
+  const [symptoms, setSymptoms] = useState<string[]>([]);
   const [notes, setNotes] = useState("");
 
   useEffect(() => {
@@ -48,8 +54,8 @@ const LogEntry = () => {
     setFrequency(Math.min(today + 1, 4));
   }, [navigate]);
 
-  const toggleTag = (id: string) =>
-    setTags((prev) => (prev.includes(id) ? prev.filter((t) => t !== id) : [...prev, id]));
+  const toggle = (id: string, list: string[], setter: (v: string[]) => void) =>
+    setter(list.includes(id) ? list.filter((t) => t !== id) : [...list, id]);
 
   const submit = () => {
     if (!bristol || !color || !frequency) return;
@@ -62,6 +68,8 @@ const LogEntry = () => {
       color,
       frequency,
       tags: tags.length ? tags : undefined,
+      foodTags: foodTags.length ? foodTags : undefined,
+      symptoms: symptoms.length ? symptoms : undefined,
       notes: notes.trim() || undefined,
       gutScore: score,
     };
@@ -69,13 +77,13 @@ const LogEntry = () => {
     navigate(`/result/${log.id}`);
   };
 
-  const TOTAL_STEPS = 5;
   const canContinue =
     (step === 1 && bristol) ||
     (step === 2 && color) ||
     (step === 3 && frequency) ||
     step === 4 ||
-    step === 5;
+    step === 5 ||
+    step === 6;
 
   return (
     <AppShell>
@@ -89,7 +97,7 @@ const LogEntry = () => {
         </button>
         <div className="flex-1">
           <div className="flex h-2 gap-1">
-            {[1, 2, 3, 4, 5].map((s) => (
+            {Array.from({ length: TOTAL_STEPS }, (_, i) => i + 1).map((s) => (
               <div
                 key={s}
                 className={`h-full flex-1 rounded-full transition-all ${
@@ -222,7 +230,7 @@ const LogEntry = () => {
                   return (
                     <button
                       key={t.id}
-                      onClick={() => toggleTag(t.id)}
+                      onClick={() => toggle(t.id, tags, setTags)}
                       className={`flex items-center gap-1.5 rounded-full border-2 px-3 py-1.5 text-sm font-medium transition-bounce ${
                         active
                           ? "border-primary bg-primary/15 text-foreground scale-[1.03]"
@@ -241,6 +249,79 @@ const LogEntry = () => {
       )}
 
       {step === 5 && (
+        <div className="animate-fade-in">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <h2 className="text-2xl font-bold">Anything else?</h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Optional — helps us spot your triggers over time.
+              </p>
+            </div>
+            <button
+              onClick={() => {
+                setFoodTags([]);
+                setSymptoms([]);
+                setStep(6);
+              }}
+              className="shrink-0 rounded-full border border-border bg-card px-4 py-2 text-sm font-semibold text-muted-foreground transition-bounce hover:scale-[1.02]"
+            >
+              Skip →
+            </button>
+          </div>
+
+          <div className="mt-5">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+              🍽️ What did you eat / drink?
+            </h3>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {FOOD_TAG_OPTIONS.map((t) => {
+                const active = foodTags.includes(t.id);
+                return (
+                  <button
+                    key={t.id}
+                    onClick={() => toggle(t.id, foodTags, setFoodTags)}
+                    className={`flex items-center gap-1.5 rounded-full border-2 px-3 py-1.5 text-sm font-medium transition-bounce ${
+                      active
+                        ? "border-primary bg-primary/15 text-foreground scale-[1.03]"
+                        : "border-border bg-card text-muted-foreground"
+                    }`}
+                  >
+                    <span>{t.emoji}</span>
+                    <span>{t.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="mt-6">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+              Any symptoms today?
+            </h3>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {SYMPTOM_OPTIONS.map((t) => {
+                const active = symptoms.includes(t.id);
+                return (
+                  <button
+                    key={t.id}
+                    onClick={() => toggle(t.id, symptoms, setSymptoms)}
+                    className={`flex items-center gap-1.5 rounded-full border-2 px-3 py-1.5 text-sm font-medium transition-bounce ${
+                      active
+                        ? "border-primary bg-primary/15 text-foreground scale-[1.03]"
+                        : "border-border bg-card text-muted-foreground"
+                    }`}
+                  >
+                    <span>{t.emoji}</span>
+                    <span>{t.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {step === 6 && (
         <div className="animate-fade-in">
           <h2 className="text-2xl font-bold">Any notes?</h2>
           <p className="mt-1 text-sm text-muted-foreground">

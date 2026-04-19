@@ -26,9 +26,108 @@ export interface PoopLog {
   color: StoolColor;
   frequency: number; // which # of the day (1,2,3,4)
   tags?: string[];
+  foodTags?: string[];
+  symptoms?: string[];
   notes?: string;
   gutScore: number;
 }
+
+export const FOOD_TAG_OPTIONS: { id: string; label: string; emoji: string }[] = [
+  { id: "dairy", label: "Dairy", emoji: "🥛" },
+  { id: "gluten", label: "Gluten", emoji: "🌾" },
+  { id: "spicy", label: "Spicy", emoji: "🌶️" },
+  { id: "caffeine", label: "Caffeine", emoji: "☕" },
+  { id: "vegetables", label: "Vegetables", emoji: "🥦" },
+  { id: "meat", label: "Meat", emoji: "🥩" },
+  { id: "alcohol", label: "Alcohol", emoji: "🍺" },
+  { id: "processed", label: "Processed", emoji: "🍔" },
+  { id: "medication", label: "Medication", emoji: "💊" },
+  { id: "high_stress", label: "High stress", emoji: "😰" },
+];
+
+export const SYMPTOM_OPTIONS: { id: string; label: string; emoji: string }[] = [
+  { id: "bloating", label: "Bloating", emoji: "😮‍💨" },
+  { id: "cramps", label: "Cramps", emoji: "😣" },
+  { id: "urgency", label: "Urgency", emoji: "🚨" },
+  { id: "straining", label: "Straining", emoji: "😓" },
+  { id: "nausea", label: "Nausea", emoji: "🤢" },
+  { id: "fatigue", label: "Fatigue", emoji: "😴" },
+  { id: "gas", label: "Gas", emoji: "💨" },
+];
+
+export const getFoodTagMeta = (id: string) => FOOD_TAG_OPTIONS.find((t) => t.id === id);
+export const getSymptomMeta = (id: string) => SYMPTOM_OPTIONS.find((t) => t.id === id);
+
+export interface FoodTrigger {
+  id: string;
+  label: string;
+  emoji: string;
+  avgDrop: number; // positive number = how many points lower vs overall avg
+  count: number;
+}
+
+// Trigger tracker: top food tags correlated with low Gut Scores (<55) over last 30 logs.
+export const getFoodTriggers = (logs: PoopLog[]): FoodTrigger[] => {
+  const recent = logs.slice(0, 30);
+  const tagged = recent.filter((l) => l.foodTags && l.foodTags.length > 0);
+  if (recent.length < 14 || tagged.length < 5) return [];
+  const overallAvg = recent.reduce((s, l) => s + l.gutScore, 0) / recent.length;
+  const out: FoodTrigger[] = [];
+  for (const f of FOOD_TAG_OPTIONS) {
+    const withTag = recent.filter((l) => l.foodTags?.includes(f.id));
+    if (withTag.length < 2) continue;
+    const lowScoreCount = withTag.filter((l) => l.gutScore < 55).length;
+    if (lowScoreCount === 0) continue;
+    const avgWith = withTag.reduce((s, l) => s + l.gutScore, 0) / withTag.length;
+    const drop = Math.round(overallAvg - avgWith);
+    if (drop <= 0) continue;
+    out.push({
+      id: f.id,
+      label: f.label,
+      emoji: f.emoji,
+      avgDrop: drop,
+      count: withTag.length,
+    });
+  }
+  return out.sort((a, b) => b.avgDrop - a.avgDrop).slice(0, 3);
+};
+
+// Most logged food tag in the last 7 days (for IBS weekly tip)
+export const getTopFoodTagThisWeek = (logs: PoopLog[]): string | null => {
+  const cutoff = Date.now() - 7 * 24 * 60 * 60 * 1000;
+  const counts: Record<string, number> = {};
+  for (const l of logs) {
+    if (l.timestamp < cutoff) continue;
+    for (const id of l.foodTags || []) counts[id] = (counts[id] || 0) + 1;
+  }
+  const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+  return sorted[0]?.[0] ?? null;
+};
+
+export const IBS_TIPS: Record<string, string> = {
+  dairy:
+    "Dairy showed up a lot this week — try a 3-day dairy-free stretch and see if your scores improve.",
+  caffeine:
+    "Caffeine speeds up gut transit. Notice any pattern with your morning coffee?",
+  gluten:
+    "Gluten popped up often this week — worth experimenting with a low-gluten breakfast and tracking the result.",
+  spicy:
+    "Spicy foods can trigger urgency for some IBS folks — try logging right after spicy meals to spot a pattern.",
+  alcohol:
+    "Alcohol is a common IBS trigger — see if cutting back this week shifts your scores.",
+  processed:
+    "Processed foods tend to be low fibre and high additive — try one swap a day for whole foods.",
+  high_stress:
+    "Stress is one of the top IBS triggers — your high-stress days may be linked to lower scores.",
+  vegetables:
+    "Soluble fibre (oats, bananas) tends to be gentler than insoluble fibre (raw veg) for IBS — worth experimenting.",
+  meat: "Try a low-FODMAP breakfast this week and see if your score improves.",
+  medication:
+    "Some medications affect gut motility — track timing to spot patterns.",
+};
+
+export const GENERIC_IBS_TIP =
+  "Eating at consistent times helps regulate gut transit — try logging your meal times this week.";
 
 export const TAG_OPTIONS: { id: string; label: string; emoji: string; category: "food" | "drink" | "lifestyle" | "symptom" }[] = [
   { id: "dairy", label: "Dairy", emoji: "🧀", category: "food" },

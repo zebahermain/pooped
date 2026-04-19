@@ -8,6 +8,7 @@ import { AppShell } from "@/components/AppShell";
 import { GutScoreRing } from "@/components/GutScoreRing";
 import { WeeklyChart } from "@/components/WeeklyChart";
 import { DoctorCard } from "@/components/DoctorCard";
+import { IBSWeeklyTip } from "@/components/IBSWeeklyTip";
 import { toast } from "@/hooks/use-toast";
 import {
   addToWaitlist,
@@ -83,6 +84,8 @@ const Home = () => {
       <section className="mt-8">
         <WeeklyChart data={weekly} />
       </section>
+
+      <IBSWeeklyTip />
 
       <DoctorCard />
 
