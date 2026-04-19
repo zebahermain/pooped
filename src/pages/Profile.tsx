@@ -34,6 +34,7 @@ const freqs: { id: FrequencyPref; label: string }[] = [
 
 const ProfilePage = () => {
   const navigate = useNavigate();
+  const { user, signOut } = useAuth();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [editing, setEditing] = useState(false);
 
@@ -60,6 +61,7 @@ const ProfilePage = () => {
   const save = () => {
     saveProfile(profile);
     setEditing(false);
+    if (user) pushProfileToCloud(user.id).catch(console.error);
     toast({ title: "Profile saved" });
   };
 
