@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { ChevronDown } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { TagCorrelations } from "@/components/TagCorrelations";
+import { TriggerTracker } from "@/components/TriggerTracker";
 import {
   BRISTOL_META,
   COLOR_META,
@@ -60,6 +61,8 @@ const History = () => {
           </button>
         ))}
       </div>
+
+      {tab === "logs" && <TriggerTracker logs={logs} />}
 
       {tab === "insights" ? (
         <TagCorrelations logs={logs} />
