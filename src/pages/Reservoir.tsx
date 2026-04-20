@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { AppShell } from "@/components/AppShell";
 import { ToiletBowl } from "@/components/ToiletBowl";
-import { toast } from "@/hooks/use-toast";
+import { ToiletBowl } from "@/components/ToiletBowl";
 import {
   LAUNCH_THRESHOLD,
   acknowledgeLaunchDot,

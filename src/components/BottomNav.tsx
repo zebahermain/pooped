@@ -30,7 +30,10 @@ export const BottomNav = () => {
 
   if (
     location.pathname.startsWith("/onboarding") ||
-    location.pathname.startsWith("/result")
+    location.pathname.startsWith("/result") ||
+    location.pathname.startsWith("/send") ||
+    location.pathname.startsWith("/splat") ||
+    location.pathname.startsWith("/auth")
   ) {
     return null;
   }
