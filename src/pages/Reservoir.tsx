@@ -35,10 +35,7 @@ const Reservoir = () => {
   const untilLaunch = Math.max(0, LAUNCH_THRESHOLD - state.units);
 
   const handleLaunch = () => {
-    toast({
-      title: "Launch flow coming soon 🚀",
-      description: "Recipient + percentage + delivery style — next update.",
-    });
+    navigate("/send");
   };
 
   return (
