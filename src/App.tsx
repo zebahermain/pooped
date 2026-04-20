@@ -13,6 +13,7 @@ import Onboarding from "./pages/Onboarding.tsx";
 import LogEntry from "./pages/LogEntry.tsx";
 import Result from "./pages/Result.tsx";
 import History from "./pages/History.tsx";
+import Reservoir from "./pages/Reservoir.tsx";
 import ProfilePage from "./pages/Profile.tsx";
 import AuthPage from "./pages/Auth.tsx";
 import NotFound from "./pages/NotFound.tsx";
@@ -44,6 +45,7 @@ const App = () => (
               <Route path="/log" element={<LogEntry />} />
               <Route path="/result/:score" element={<Result />} />
               <Route path="/history" element={<History />} />
+              <Route path="/reservoir" element={<Reservoir />} />
               <Route path="/profile" element={<ProfilePage />} />
               <Route path="*" element={<NotFound />} />
             </Routes>

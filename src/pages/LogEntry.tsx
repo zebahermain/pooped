@@ -16,6 +16,7 @@ import {
   saveLog,
   type StoolColor,
 } from "@/lib/storage";
+import { applyLogToReservoir } from "@/lib/reservoir";
 
 const colorOrder: StoolColor[] = [
   "medium_brown",
@@ -57,7 +58,7 @@ const LogEntry = () => {
   const toggle = (id: string, list: string[], setter: (v: string[]) => void) =>
     setter(list.includes(id) ? list.filter((t) => t !== id) : [...list, id]);
 
-  const submit = () => {
+  const submit = async () => {
     if (!bristol || !color || !frequency) return;
     const todayCount = getTodaysLogs().length + 1;
     const score = calculateGutScore(bristol, color, todayCount);
@@ -74,6 +75,13 @@ const LogEntry = () => {
       gutScore: score,
     };
     saveLog(log);
+    // Update reservoir (best-effort cloud sync inside).
+    try {
+      await applyLogToReservoir(log);
+    } catch (e) {
+      // non-fatal
+      console.error(e);
+    }
     navigate(`/result/${log.id}`);
   };
 
