@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { AppShell } from "@/components/AppShell";
 import { ToiletBowl } from "@/components/ToiletBowl";
-import { toast } from "@/hooks/use-toast";
 import {
   LAUNCH_THRESHOLD,
   acknowledgeLaunchDot,
@@ -35,10 +34,7 @@ const Reservoir = () => {
   const untilLaunch = Math.max(0, LAUNCH_THRESHOLD - state.units);
 
   const handleLaunch = () => {
-    toast({
-      title: "Launch flow coming soon 🚀",
-      description: "Recipient + percentage + delivery style — next update.",
-    });
+    navigate("/send");
   };
 
   return (

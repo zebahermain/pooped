@@ -14,6 +14,8 @@ import LogEntry from "./pages/LogEntry.tsx";
 import Result from "./pages/Result.tsx";
 import History from "./pages/History.tsx";
 import Reservoir from "./pages/Reservoir.tsx";
+import Send from "./pages/Send.tsx";
+import Splat from "./pages/Splat.tsx";
 import ProfilePage from "./pages/Profile.tsx";
 import AuthPage from "./pages/Auth.tsx";
 import NotFound from "./pages/NotFound.tsx";
@@ -46,6 +48,8 @@ const App = () => (
               <Route path="/result/:score" element={<Result />} />
               <Route path="/history" element={<History />} />
               <Route path="/reservoir" element={<Reservoir />} />
+              <Route path="/send" element={<Send />} />
+              <Route path="/splat/:id" element={<Splat />} />
               <Route path="/profile" element={<ProfilePage />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
