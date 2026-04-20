@@ -53,6 +53,39 @@ export type Database = {
         }
         Relationships: []
       }
+      splats: {
+        Row: {
+          created_at: string
+          id: string
+          recipient_name: string
+          sender_avatar: string
+          sender_id: string
+          sender_name: string
+          style: string
+          units: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          recipient_name: string
+          sender_avatar?: string
+          sender_id: string
+          sender_name?: string
+          style: string
+          units: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          recipient_name?: string
+          sender_avatar?: string
+          sender_id?: string
+          sender_name?: string
+          style?: string
+          units?: number
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
