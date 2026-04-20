@@ -9,14 +9,22 @@ import { GutScoreRing } from "@/components/GutScoreRing";
 import { WeeklyChart } from "@/components/WeeklyChart";
 import { DoctorCard } from "@/components/DoctorCard";
 import { IBSWeeklyTip } from "@/components/IBSWeeklyTip";
+import { ReservoirCard } from "@/components/ReservoirCard";
+import { FirstReservoirModal } from "@/components/FirstReservoirModal";
 import { toast } from "@/hooks/use-toast";
 import {
   addToWaitlist,
   getCurrentGutScore,
+  getLogs,
   getProfile,
   getStreakData,
   getWeeklyScores,
 } from "@/lib/storage";
+import {
+  getReservoirState,
+  hasSeenFirstFill,
+  markFirstFillSeen,
+} from "@/lib/reservoir";
 
 const Home = () => {
   const navigate = useNavigate();
@@ -26,6 +34,7 @@ const Home = () => {
   const [profile, setProfile] = useState(getProfile());
   const [proOpen, setProOpen] = useState(false);
   const [email, setEmail] = useState("");
+  const [firstFillOpen, setFirstFillOpen] = useState(false);
 
   useEffect(() => {
     const p = getProfile();
@@ -38,6 +47,14 @@ const Home = () => {
     setScore(getCurrentGutScore());
     setStreak(getStreakData().currentStreak);
     setWeekly(getWeeklyScores());
+
+    // First-time reservoir fill modal: triggers the first time the user
+    // returns to Home with at least 1 log + reservoir > 0.
+    const r = getReservoirState();
+    if (r.units > 0 && getLogs().length >= 1 && !hasSeenFirstFill()) {
+      setFirstFillOpen(true);
+      markFirstFillSeen();
+    }
   }, [navigate]);
 
   const submitWaitlist = () => {
@@ -85,6 +102,8 @@ const Home = () => {
         <WeeklyChart data={weekly} />
       </section>
 
+      <ReservoirCard />
+
       <IBSWeeklyTip />
 
       <DoctorCard />
@@ -130,6 +149,11 @@ const Home = () => {
           </Button>
         </DialogContent>
       </Dialog>
+
+      <FirstReservoirModal
+        open={firstFillOpen}
+        onClose={() => setFirstFillOpen(false)}
+      />
     </AppShell>
   );
 };

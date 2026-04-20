@@ -4,6 +4,7 @@ import { AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { GutScoreRing } from "@/components/GutScoreRing";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { ReservoirGainBanner } from "@/components/ReservoirGainBanner";
 import { toast } from "@/hooks/use-toast";
 import { getLogs, isAlertColor, COLOR_META } from "@/lib/storage";
 
@@ -108,6 +109,8 @@ const Result = () => {
           {bristolMsg}
         </p>
       </div>
+
+      <ReservoirGainBanner />
 
       <div className="mt-auto flex flex-col gap-3 pt-8">
         <Button variant="hero" size="xl" className="w-full" onClick={share}>

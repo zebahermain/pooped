@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { getProfile, saveProfile, type Profile } from "@/lib/storage";
+import { pullReservoirFromCloud } from "@/lib/reservoir";
 
 const SYNCED_KEY = "pooped_profile_synced_user";
 
@@ -9,6 +10,9 @@ const SYNCED_KEY = "pooped_profile_synced_user";
  * existing localStorage-driven UI keeps working unchanged.
  */
 export const syncProfileForUser = async (userId: string) => {
+  // Always pull (and reconcile) the reservoir state on sign-in.
+  pullReservoirFromCloud(userId).catch(() => {});
+
   const { data: cloud } = await supabase
     .from("profiles")
     .select("name, avatar, goal, frequency_pref")

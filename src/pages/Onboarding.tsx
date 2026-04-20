@@ -63,7 +63,7 @@ const Onboarding = () => {
 
       {/* progress dots */}
       <div className="mb-8 flex justify-center gap-2 pt-4">
-        {[0, 1, 2, 3].map((i) => (
+        {[0, 1, 2, 3, 4].map((i) => (
           <div
             key={i}
             className={`h-2 rounded-full transition-all ${
@@ -140,7 +140,7 @@ const Onboarding = () => {
       {step === 2 && (
         <div className="flex flex-1 flex-col animate-fade-in">
           <span className="text-xs font-semibold uppercase tracking-widest text-primary">
-            Step 2 of 3
+            Step 2 of 4
           </span>
           <h2 className="mt-2 text-3xl font-bold">What's your main goal?</h2>
           <p className="mt-2 text-muted-foreground">We'll tailor your experience.</p>
@@ -173,6 +173,46 @@ const Onboarding = () => {
       )}
 
       {step === 3 && (
+        <div className="flex flex-1 flex-col animate-fade-in">
+          <span className="text-xs font-semibold uppercase tracking-widest text-primary">
+            Oh, and one more thing 😈
+          </span>
+          <h2 className="mt-2 text-3xl font-bold">Meet your Reservoir 💩</h2>
+          <p className="mt-2 text-muted-foreground">
+            The most ridiculous part of Pooped — and we're proud of it.
+          </p>
+          <div className="mt-6 flex flex-col gap-3">
+            <div className="flex items-start gap-3 rounded-2xl border-2 border-transparent bg-card p-5 shadow-card">
+              <span className="text-2xl">💩</span>
+              <p className="text-sm font-medium leading-relaxed">
+                Log daily → fill your reservoir
+              </p>
+            </div>
+            <div className="flex items-start gap-3 rounded-2xl border-2 border-transparent bg-card p-5 shadow-card">
+              <span className="text-2xl">🚀</span>
+              <p className="text-sm font-medium leading-relaxed">
+                Build up enough → launch at friends
+              </p>
+            </div>
+            <div className="flex items-start gap-3 rounded-2xl border-2 border-transparent bg-card p-5 shadow-card">
+              <span className="text-2xl">😂</span>
+              <p className="text-sm font-medium leading-relaxed">
+                They get shat on → they join Pooped
+              </p>
+            </div>
+          </div>
+          <Button
+            variant="hero"
+            size="xl"
+            className="mt-auto w-full"
+            onClick={() => setStep(4)}
+          >
+            Let's go 💩
+          </Button>
+        </div>
+      )}
+
+      {step === 4 && (
         <div className="flex flex-1 flex-col animate-fade-in">
           <span className="text-xs font-semibold uppercase tracking-widest text-primary">
             Step 3 of 3

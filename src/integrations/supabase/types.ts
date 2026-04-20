@@ -22,6 +22,9 @@ export type Database = {
           goal: string | null
           id: string
           name: string
+          reservoir_max: number
+          reservoir_notified: boolean
+          reservoir_units: number
           updated_at: string
         }
         Insert: {
@@ -31,6 +34,9 @@ export type Database = {
           goal?: string | null
           id: string
           name?: string
+          reservoir_max?: number
+          reservoir_notified?: boolean
+          reservoir_units?: number
           updated_at?: string
         }
         Update: {
@@ -40,6 +46,9 @@ export type Database = {
           goal?: string | null
           id?: string
           name?: string
+          reservoir_max?: number
+          reservoir_notified?: boolean
+          reservoir_units?: number
           updated_at?: string
         }
         Relationships: []
