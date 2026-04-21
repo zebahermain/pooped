@@ -86,6 +86,18 @@ const ProfilePage = () => {
         <Stat label="Avg score" value={avg} />
       </section>
 
+      {hasHonestLoggerBadge() && (
+        <section className="mt-4 flex items-start gap-3 rounded-3xl border border-success/30 bg-success/10 p-4">
+          <div className="text-3xl">🏅</div>
+          <div className="flex-1">
+            <h3 className="font-bold text-foreground">Honest logger</h3>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Your data is clean — that makes your insights more accurate.
+            </p>
+          </div>
+        </section>
+      )}
+
       {/* Edit */}
       <section className="mt-6 rounded-3xl bg-card p-5 shadow-card border border-border">
         <div className="flex items-center justify-between">

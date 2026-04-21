@@ -25,6 +25,11 @@ import {
   hasSeenFirstFill,
   markFirstFillSeen,
 } from "@/lib/reservoir";
+import {
+  hasSeenSuspiciousNudge,
+  hasSuspiciousPattern,
+  markSuspiciousNudgeSeen,
+} from "@/lib/honesty";
 
 const Home = () => {
   const navigate = useNavigate();
