@@ -8,6 +8,7 @@ import { AppShell } from "@/components/AppShell";
 import { GutScoreRing } from "@/components/GutScoreRing";
 import { WeeklyChart } from "@/components/WeeklyChart";
 import { DoctorCard } from "@/components/DoctorCard";
+import { DoctorLinkSmall } from "@/components/DoctorLinkSmall";
 import { IBSWeeklyTip } from "@/components/IBSWeeklyTip";
 import { ReservoirCard } from "@/components/ReservoirCard";
 import { FirstReservoirModal } from "@/components/FirstReservoirModal";
@@ -154,14 +155,7 @@ const Home = () => {
           <p className="mt-1 text-sm text-muted-foreground">
             This is worth paying attention to. Common causes: low fibre, dehydration, stress, or changes in routine.
           </p>
-          <a
-            href="https://www.google.com/maps/search/gastroenterologist+near+me"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="mt-3 inline-block text-sm font-semibold text-primary"
-          >
-            Find a doctor near me →
-          </a>
+          <DoctorLinkSmall />
         </div>
       )}
 
@@ -174,14 +168,7 @@ const Home = () => {
             3 days without a movement is considered constipation. We'd recommend
             speaking to a doctor if this is unusual for you.
           </p>
-          <a
-            href="https://www.google.com/maps/search/gastroenterologist+near+me"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="mt-3 inline-block text-sm font-semibold text-primary"
-          >
-            Find a doctor near me →
-          </a>
+          <DoctorLinkSmall />
         </div>
       )}
 
