@@ -400,9 +400,14 @@ const LogEntry = () => {
             <Button
               variant="hero"
               size="xl"
-              className="w-full shadow-[0_12px_30px_rgba(217,119,6,0.45)]"
-              disabled={!canContinue}
-              onClick={() => setStep(step + 1)}
+              className="w-full"
+              onClick={() => {
+                if (!canContinue) {
+                  toast({ title: "Pick an option to continue" });
+                  return;
+                }
+                setStep(step + 1);
+              }}
               data-testid="log-continue-button"
             >
               Continue →
@@ -411,7 +416,7 @@ const LogEntry = () => {
             <Button
               variant="hero"
               size="xl"
-              className="w-full shadow-[0_12px_30px_rgba(217,119,6,0.45)]"
+              className="w-full"
               onClick={handleCalculate}
               data-testid="log-calculate-button"
             >
