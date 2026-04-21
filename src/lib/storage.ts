@@ -252,37 +252,71 @@ export const getStreakData = (): StreakData => {
 
 const updateStreak = () => {
   const logs = getLogs();
-  const dates = new Set(logs.map((l) => toDateStr(l.timestamp)));
+  // Group by date: bristol values per day.
+  const byDate: Record<string, number[]> = {};
+  for (const l of logs) {
+    const d = toDateStr(l.timestamp);
+    (byDate[d] ||= []).push(l.bristolType);
+  }
+  const dates = new Set(Object.keys(byDate));
   const today = todayStr();
   const yesterday = new Date();
   yesterday.setDate(yesterday.getDate() - 1);
   const yStr = toDateStr(yesterday.getTime());
 
   const data = getStreakData();
-  let streak = 0;
-  const cursor = new Date();
-  if (!dates.has(today)) {
-    if (!dates.has(yStr)) {
-      streak = 0;
-    } else {
-      cursor.setDate(cursor.getDate() - 1);
-      while (dates.has(toDateStr(cursor.getTime()))) {
-        streak++;
-        cursor.setDate(cursor.getDate() - 1);
-      }
-    }
-  } else {
-    while (dates.has(toDateStr(cursor.getTime()))) {
-      streak++;
-      cursor.setDate(cursor.getDate() - 1);
+
+  // Count consecutive no-movement days ending today/yesterday.
+  const isNoMoveDay = (ds: string) => {
+    const arr = byDate[ds];
+    return !!arr && arr.length > 0 && arr.every((b) => b === 0);
+  };
+  let noMoveStart: Date | null = null;
+  if (dates.has(today)) noMoveStart = new Date();
+  else if (dates.has(yStr)) noMoveStart = yesterday;
+  let noMoveRun = 0;
+  if (noMoveStart) {
+    const c = new Date(noMoveStart);
+    while (isNoMoveDay(toDateStr(c.getTime()))) {
+      noMoveRun++;
+      c.setDate(c.getDate() - 1);
     }
   }
 
-  const longest = Math.max(data.longestStreak, streak);
+  // Count streak: consecutive days with any log ending today or yesterday.
+  let streak = 0;
+  const cursor = new Date();
+  if (!dates.has(today)) {
+    if (dates.has(yStr)) cursor.setDate(cursor.getDate() - 1);
+    else {
+      const next: StreakData = {
+        currentStreak: 0,
+        lastLogDate: today,
+        longestStreak: data.longestStreak,
+        paused: false,
+      };
+      localStorage.setItem(STREAK_KEY, JSON.stringify(next));
+      return;
+    }
+  }
+  while (dates.has(toDateStr(cursor.getTime()))) {
+    streak++;
+    cursor.setDate(cursor.getDate() - 1);
+  }
+
+  // Pause rule: if 3+ consecutive no-movement days, freeze the streak at
+  // its pre-pause length so it doesn't grow — but don't reset.
+  const paused = noMoveRun >= 3;
+  const effectiveStreak = paused
+    ? Math.max(0, streak - noMoveRun)
+    : streak;
+
+  const longest = Math.max(data.longestStreak, effectiveStreak);
   const next: StreakData = {
-    currentStreak: streak,
+    currentStreak: effectiveStreak,
     lastLogDate: today,
     longestStreak: longest,
+    paused,
   };
   localStorage.setItem(STREAK_KEY, JSON.stringify(next));
 };
