@@ -48,6 +48,9 @@ const LogEntry = () => {
   const [foodTags, setFoodTags] = useState<string[]>([]);
   const [symptoms, setSymptoms] = useState<string[]>([]);
   const [notes, setNotes] = useState("");
+  const [symptomTipDismissed, setSymptomTipDismissed] = useState(
+    () => typeof window !== "undefined" && !!localStorage.getItem("pooped.symptomTipSeen"),
+  );
 
   useEffect(() => {
     if (!getProfile()) navigate("/onboarding", { replace: true });
