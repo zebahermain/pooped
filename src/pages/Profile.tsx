@@ -6,6 +6,7 @@ import { AppShell } from "@/components/AppShell";
 import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { pushProfileToCloud } from "@/lib/profileSync";
+import { hasHonestLoggerBadge } from "@/lib/honesty";
 import {
   getAverageScore,
   getLogs,
@@ -84,6 +85,18 @@ const ProfilePage = () => {
         <Stat label="Streak" value={`${streak.currentStreak}🔥`} />
         <Stat label="Avg score" value={avg} />
       </section>
+
+      {hasHonestLoggerBadge() && (
+        <section className="mt-4 flex items-start gap-3 rounded-3xl border border-success/30 bg-success/10 p-4">
+          <div className="text-3xl">🏅</div>
+          <div className="flex-1">
+            <h3 className="font-bold text-foreground">Honest logger</h3>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Your data is clean — that makes your insights more accurate.
+            </p>
+          </div>
+        </section>
+      )}
 
       {/* Edit */}
       <section className="mt-6 rounded-3xl bg-card p-5 shadow-card border border-border">

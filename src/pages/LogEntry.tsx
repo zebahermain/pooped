@@ -4,6 +4,8 @@ import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { AppShell } from "@/components/AppShell";
+import { HonestyCheck } from "@/components/HonestyCheck";
+import { toast } from "@/hooks/use-toast";
 import {
   BRISTOL_META,
   COLOR_META,
@@ -48,6 +50,7 @@ const LogEntry = () => {
   const [foodTags, setFoodTags] = useState<string[]>([]);
   const [symptoms, setSymptoms] = useState<string[]>([]);
   const [notes, setNotes] = useState("");
+  const [honestyOpen, setHonestyOpen] = useState(false);
   const [symptomTipDismissed, setSymptomTipDismissed] = useState(
     () => typeof window !== "undefined" && !!localStorage.getItem("pooped.symptomTipSeen"),
   );
@@ -86,6 +89,20 @@ const LogEntry = () => {
       console.error(e);
     }
     navigate(`/result/${log.id}`);
+  };
+
+  const handleCalculate = () => {
+    if (!bristol || !color || !frequency) return;
+    setHonestyOpen(true);
+  };
+
+  const handleHonestyDeny = () => {
+    setHonestyOpen(false);
+    toast({
+      title: "No worries — come back when you do 🙏",
+      description: "Your streak is safe until midnight.",
+    });
+    navigate("/");
   };
 
   const canContinue =
@@ -387,12 +404,18 @@ const LogEntry = () => {
               Continue →
             </Button>
           ) : (
-            <Button variant="hero" size="xl" className="w-full" onClick={submit}>
+            <Button variant="hero" size="xl" className="w-full" onClick={handleCalculate}>
               Calculate my score →
             </Button>
           )}
         </div>
       </div>
+
+      <HonestyCheck
+        open={honestyOpen}
+        onConfirm={submit}
+        onDeny={handleHonestyDeny}
+      />
     </AppShell>
   );
 };

@@ -25,6 +25,11 @@ import {
   hasSeenFirstFill,
   markFirstFillSeen,
 } from "@/lib/reservoir";
+import {
+  hasSeenSuspiciousNudge,
+  hasSuspiciousPattern,
+  markSuspiciousNudgeSeen,
+} from "@/lib/honesty";
 
 const Home = () => {
   const navigate = useNavigate();
@@ -35,6 +40,7 @@ const Home = () => {
   const [proOpen, setProOpen] = useState(false);
   const [email, setEmail] = useState("");
   const [firstFillOpen, setFirstFillOpen] = useState(false);
+  const [showSuspiciousNudge, setShowSuspiciousNudge] = useState(false);
 
   useEffect(() => {
     const p = getProfile();
@@ -55,7 +61,16 @@ const Home = () => {
       setFirstFillOpen(true);
       markFirstFillSeen();
     }
+
+    if (!hasSeenSuspiciousNudge() && hasSuspiciousPattern()) {
+      setShowSuspiciousNudge(true);
+    }
   }, [navigate]);
+
+  const dismissSuspiciousNudge = () => {
+    markSuspiciousNudgeSeen();
+    setShowSuspiciousNudge(false);
+  };
 
   const submitWaitlist = () => {
     if (!email.includes("@")) {
@@ -88,6 +103,25 @@ const Home = () => {
           </span>
         </div>
       </section>
+
+      {showSuspiciousNudge && (
+        <div className="mt-6 flex items-start gap-3 rounded-2xl border border-warning/40 bg-warning/10 p-4">
+          <div className="text-2xl">🙏</div>
+          <div className="flex-1">
+            <p className="text-sm font-semibold text-foreground">Heads up</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Logging more than 3 times daily can skew your Gut Score. We trust you to keep it real.
+            </p>
+          </div>
+          <button
+            onClick={dismissSuspiciousNudge}
+            className="shrink-0 rounded-full px-2 text-lg text-muted-foreground hover:text-foreground"
+            aria-label="Dismiss"
+          >
+            ✕
+          </button>
+        </div>
+      )}
 
       <Button
         variant="hero"
