@@ -4,6 +4,8 @@ import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { AppShell } from "@/components/AppShell";
+import { HonestyCheck } from "@/components/HonestyCheck";
+import { toast } from "@/hooks/use-toast";
 import {
   BRISTOL_META,
   COLOR_META,
