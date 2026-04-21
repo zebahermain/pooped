@@ -345,22 +345,26 @@ const LogEntry = () => {
         </div>
       )}
 
-      <div className="mt-8">
-        {step < TOTAL_STEPS ? (
-          <Button
-            variant="hero"
-            size="xl"
-            className="w-full"
-            disabled={!canContinue}
-            onClick={() => setStep(step + 1)}
-          >
-            Continue →
-          </Button>
-        ) : (
-          <Button variant="hero" size="xl" className="w-full" onClick={submit}>
-            Calculate my score →
-          </Button>
-        )}
+      </div>
+
+      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 px-6 py-4 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+        <div className="mx-auto w-full max-w-md">
+          {step < TOTAL_STEPS ? (
+            <Button
+              variant="hero"
+              size="xl"
+              className="w-full"
+              disabled={!canContinue}
+              onClick={() => setStep(step + 1)}
+            >
+              Continue →
+            </Button>
+          ) : (
+            <Button variant="hero" size="xl" className="w-full" onClick={submit}>
+              Calculate my score →
+            </Button>
+          )}
+        </div>
       </div>
     </AppShell>
   );
