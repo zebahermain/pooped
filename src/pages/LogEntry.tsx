@@ -91,6 +91,20 @@ const LogEntry = () => {
     navigate(`/result/${log.id}`);
   };
 
+  const handleCalculate = () => {
+    if (!bristol || !color || !frequency) return;
+    setHonestyOpen(true);
+  };
+
+  const handleHonestyDeny = () => {
+    setHonestyOpen(false);
+    toast({
+      title: "No worries — come back when you do 🙏",
+      description: "Your streak is safe until midnight.",
+    });
+    navigate("/");
+  };
+
   const canContinue =
     (step === 1 && bristol) ||
     (step === 2 && color) ||
