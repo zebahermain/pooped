@@ -48,6 +48,9 @@ const LogEntry = () => {
   const [foodTags, setFoodTags] = useState<string[]>([]);
   const [symptoms, setSymptoms] = useState<string[]>([]);
   const [notes, setNotes] = useState("");
+  const [symptomTipDismissed, setSymptomTipDismissed] = useState(
+    () => typeof window !== "undefined" && !!localStorage.getItem("pooped.symptomTipSeen"),
+  );
 
   useEffect(() => {
     if (!getProfile()) navigate("/onboarding", { replace: true });
@@ -95,6 +98,7 @@ const LogEntry = () => {
 
   return (
     <AppShell>
+      <div className="pb-28">
       <header className="mb-6 flex items-center gap-3 pr-12">
         <button
           onClick={() => (step === 1 ? navigate("/") : setStep(step - 1))}
@@ -277,6 +281,30 @@ const LogEntry = () => {
             </button>
           </div>
 
+          {!symptomTipDismissed && (
+            <div className="mt-5 rounded-2xl border border-primary/30 bg-gradient-to-br from-primary/10 to-primary-glow/5 p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex-1">
+                  <p className="text-sm font-bold">💡 First time logging symptoms?</p>
+                  <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+                    Tag what you ate and how you felt. After ~14 logs we'll
+                    surface your most likely food triggers. Skip whenever you like.
+                  </p>
+                </div>
+                <button
+                  onClick={() => {
+                    localStorage.setItem("pooped.symptomTipSeen", "1");
+                    setSymptomTipDismissed(true);
+                  }}
+                  className="shrink-0 rounded-full px-2 text-lg text-muted-foreground hover:text-foreground"
+                  aria-label="Dismiss tip"
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+          )}
+
           <div className="mt-5">
             <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
               🍽️ What did you eat / drink?
@@ -344,22 +372,26 @@ const LogEntry = () => {
         </div>
       )}
 
-      <div className="mt-8">
-        {step < TOTAL_STEPS ? (
-          <Button
-            variant="hero"
-            size="xl"
-            className="w-full"
-            disabled={!canContinue}
-            onClick={() => setStep(step + 1)}
-          >
-            Continue →
-          </Button>
-        ) : (
-          <Button variant="hero" size="xl" className="w-full" onClick={submit}>
-            Calculate my score →
-          </Button>
-        )}
+      </div>
+
+      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 px-6 py-4 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+        <div className="mx-auto w-full max-w-md">
+          {step < TOTAL_STEPS ? (
+            <Button
+              variant="hero"
+              size="xl"
+              className="w-full"
+              disabled={!canContinue}
+              onClick={() => setStep(step + 1)}
+            >
+              Continue →
+            </Button>
+          ) : (
+            <Button variant="hero" size="xl" className="w-full" onClick={submit}>
+              Calculate my score →
+            </Button>
+          )}
+        </div>
       </div>
     </AppShell>
   );
