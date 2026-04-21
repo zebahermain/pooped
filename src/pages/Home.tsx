@@ -61,7 +61,16 @@ const Home = () => {
       setFirstFillOpen(true);
       markFirstFillSeen();
     }
+
+    if (!hasSeenSuspiciousNudge() && hasSuspiciousPattern()) {
+      setShowSuspiciousNudge(true);
+    }
   }, [navigate]);
+
+  const dismissSuspiciousNudge = () => {
+    markSuspiciousNudgeSeen();
+    setShowSuspiciousNudge(false);
+  };
 
   const submitWaitlist = () => {
     if (!email.includes("@")) {
