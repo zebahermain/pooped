@@ -30,6 +30,10 @@ import {
   hasSuspiciousPattern,
   markSuspiciousNudgeSeen,
 } from "@/lib/honesty";
+import {
+  getConsecutiveNoMovementDays,
+  shouldShowEveningNoMovementCTA,
+} from "@/lib/noMovement";
 
 const Home = () => {
   const navigate = useNavigate();
