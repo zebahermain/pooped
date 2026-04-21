@@ -104,6 +104,25 @@ const Home = () => {
         </div>
       </section>
 
+      {showSuspiciousNudge && (
+        <div className="mt-6 flex items-start gap-3 rounded-2xl border border-warning/40 bg-warning/10 p-4">
+          <div className="text-2xl">🙏</div>
+          <div className="flex-1">
+            <p className="text-sm font-semibold text-foreground">Heads up</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Logging more than 3 times daily can skew your Gut Score. We trust you to keep it real.
+            </p>
+          </div>
+          <button
+            onClick={dismissSuspiciousNudge}
+            className="shrink-0 rounded-full px-2 text-lg text-muted-foreground hover:text-foreground"
+            aria-label="Dismiss"
+          >
+            ✕
+          </button>
+        </div>
+      )}
+
       <Button
         variant="hero"
         size="xl"
