@@ -50,6 +50,7 @@ const LogEntry = () => {
   const [foodTags, setFoodTags] = useState<string[]>([]);
   const [symptoms, setSymptoms] = useState<string[]>([]);
   const [notes, setNotes] = useState("");
+  const [honestyOpen, setHonestyOpen] = useState(false);
   const [symptomTipDismissed, setSymptomTipDismissed] = useState(
     () => typeof window !== "undefined" && !!localStorage.getItem("pooped.symptomTipSeen"),
   );
