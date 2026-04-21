@@ -40,6 +40,7 @@ const Home = () => {
   const [proOpen, setProOpen] = useState(false);
   const [email, setEmail] = useState("");
   const [firstFillOpen, setFirstFillOpen] = useState(false);
+  const [showSuspiciousNudge, setShowSuspiciousNudge] = useState(false);
 
   useEffect(() => {
     const p = getProfile();
