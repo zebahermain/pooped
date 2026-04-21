@@ -6,6 +6,7 @@ import { AppShell } from "@/components/AppShell";
 import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { pushProfileToCloud } from "@/lib/profileSync";
+import { hasHonestLoggerBadge } from "@/lib/honesty";
 import {
   getAverageScore,
   getLogs,
