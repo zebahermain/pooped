@@ -11,6 +11,7 @@ import { AccountPromptDialog } from "@/components/AccountPromptDialog";
 import Index from "./pages/Index.tsx";
 import Onboarding from "./pages/Onboarding.tsx";
 import LogEntry from "./pages/LogEntry.tsx";
+import NoMovement from "./pages/NoMovement.tsx";
 import Result from "./pages/Result.tsx";
 import History from "./pages/History.tsx";
 import Reservoir from "./pages/Reservoir.tsx";
@@ -45,6 +46,7 @@ const App = () => (
               <Route path="/onboarding" element={<Onboarding />} />
               <Route path="/auth" element={<AuthPage />} />
               <Route path="/log" element={<LogEntry />} />
+              <Route path="/log/no-movement" element={<NoMovement />} />
               <Route path="/result/:score" element={<Result />} />
               <Route path="/history" element={<History />} />
               <Route path="/reservoir" element={<Reservoir />} />

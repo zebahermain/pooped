@@ -30,11 +30,18 @@ import {
   hasSuspiciousPattern,
   markSuspiciousNudgeSeen,
 } from "@/lib/honesty";
+import {
+  getConsecutiveNoMovementDays,
+  shouldShowEveningNoMovementCTA,
+} from "@/lib/noMovement";
 
 const Home = () => {
   const navigate = useNavigate();
   const [score, setScore] = useState(0);
   const [streak, setStreak] = useState(0);
+  const [streakPaused, setStreakPaused] = useState(false);
+  const [noMoveDays, setNoMoveDays] = useState(0);
+  const [showEveningCTA, setShowEveningCTA] = useState(false);
   const [weekly, setWeekly] = useState<{ day: string; score: number; date: string }[]>([]);
   const [profile, setProfile] = useState(getProfile());
   const [proOpen, setProOpen] = useState(false);
@@ -51,8 +58,12 @@ const Home = () => {
     setProfile(p);
     document.title = "Pooped — Your gut, gamified";
     setScore(getCurrentGutScore());
-    setStreak(getStreakData().currentStreak);
+    const s = getStreakData();
+    setStreak(s.currentStreak);
+    setStreakPaused(!!s.paused);
     setWeekly(getWeeklyScores());
+    setNoMoveDays(getConsecutiveNoMovementDays());
+    setShowEveningCTA(shouldShowEveningNoMovementCTA());
 
     // First-time reservoir fill modal: triggers the first time the user
     // returns to Home with at least 1 log + reservoir > 0.
@@ -101,7 +112,19 @@ const Home = () => {
           <span className="font-semibold text-accent-foreground">
             {streak} day streak
           </span>
+          {noMoveDays === 2 && !streakPaused && (
+            <span
+              className="h-2 w-2 rounded-full bg-warning"
+              title="Low activity — 2 no-movement days"
+              aria-label="Low activity"
+            />
+          )}
         </div>
+        {streakPaused && (
+          <p className="mt-2 text-xs text-muted-foreground">
+            Streak paused — not your fault. It'll resume when you're back to regular movement. 💪
+          </p>
+        )}
       </section>
 
       {showSuspiciousNudge && (
@@ -123,6 +146,45 @@ const Home = () => {
         </div>
       )}
 
+      {noMoveDays === 2 && (
+        <div className="mt-6 rounded-2xl border border-warning/40 bg-warning/10 p-4">
+          <p className="text-sm font-semibold text-foreground">
+            Two days without a bowel movement
+          </p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            This is worth paying attention to. Common causes: low fibre, dehydration, stress, or changes in routine.
+          </p>
+          <a
+            href="https://www.google.com/maps/search/gastroenterologist+near+me"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-3 inline-block text-sm font-semibold text-primary"
+          >
+            Find a doctor near me →
+          </a>
+        </div>
+      )}
+
+      {noMoveDays >= 3 && (
+        <div className="mt-6 rounded-2xl border border-destructive/40 bg-destructive/10 p-4">
+          <p className="text-sm font-semibold text-foreground">
+            3+ days without a movement
+          </p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            3 days without a movement is considered constipation. We'd recommend
+            speaking to a doctor if this is unusual for you.
+          </p>
+          <a
+            href="https://www.google.com/maps/search/gastroenterologist+near+me"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-3 inline-block text-sm font-semibold text-primary"
+          >
+            Find a doctor near me →
+          </a>
+        </div>
+      )}
+
       <Button
         variant="hero"
         size="xl"
@@ -131,6 +193,17 @@ const Home = () => {
       >
         Log a poop 💩
       </Button>
+
+      {showEveningCTA && (
+        <Button
+          variant="soft"
+          size="lg"
+          className="mt-3 w-full"
+          onClick={() => navigate("/log/no-movement")}
+        >
+          Didn't go today? Log that too →
+        </Button>
+      )}
 
       <section className="mt-8">
         <WeeklyChart data={weekly} />

@@ -42,25 +42,29 @@ const Result = () => {
     );
   }
 
-  const label =
-    score >= 80
-      ? "Excellent gut day! 🟢"
-      : score >= 60
-      ? "Pretty good 🟡"
-      : score >= 40
-      ? "Room to improve 🟠"
-      : "Rough day 🔴";
+  const isNoMovement = log.bristolType === 0 || log.noMovement;
 
-  const bristolMsg =
-    log.bristolType <= 2
-      ? "Looks like things are moving slowly — try more water and fiber today."
-      : log.bristolType >= 6
-      ? "A bit loose today — consider tracking what you ate yesterday."
-      : log.bristolType === 3 || log.bristolType === 4
-      ? "Textbook poop. Whatever you're doing — keep doing it."
-      : "Solid effort. A bit more fiber may help shape things up.";
+  const label = isNoMovement
+    ? "No movement today 🫧"
+    : score >= 80
+    ? "Excellent gut day! 🟢"
+    : score >= 60
+    ? "Pretty good 🟡"
+    : score >= 40
+    ? "Room to improve 🟠"
+    : "Rough day 🔴";
 
-  const showAlert = isAlertColor(log.color);
+  const bristolMsg = isNoMovement
+    ? "No movement today — that happens. Try more water and a short walk tomorrow. If this continues for 3+ days, consider speaking to a doctor. 💧"
+    : log.bristolType <= 2
+    ? "Looks like things are moving slowly — try more water and fiber today."
+    : log.bristolType >= 6
+    ? "A bit loose today — consider tracking what you ate yesterday."
+    : log.bristolType === 3 || log.bristolType === 4
+    ? "Textbook poop. Whatever you're doing — keep doing it."
+    : "Solid effort. A bit more fiber may help shape things up.";
+
+  const showAlert = !isNoMovement && isAlertColor(log.color);
 
   const share = async () => {
     const text = `My Gut Score today: ${score}/100 💩 Tracked with Pooped — gutpooped.com`;
