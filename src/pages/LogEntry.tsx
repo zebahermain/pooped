@@ -115,7 +115,7 @@ const LogEntry = () => {
 
   return (
     <AppShell>
-      <div className="pb-28">
+      <div className="pb-44">
       <header className="mb-6 flex items-center gap-3 pr-12">
         <button
           onClick={() => (step === 1 ? navigate("/") : setStep(step - 1))}
@@ -391,20 +391,30 @@ const LogEntry = () => {
 
       </div>
 
-      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 px-6 py-4 backdrop-blur supports-[backdrop-filter]:bg-background/80">
-        <div className="mx-auto w-full max-w-md">
+      <div
+        className="fixed inset-x-0 z-50 px-4 pointer-events-none"
+        style={{ bottom: "calc(env(safe-area-inset-bottom, 0px) + 72px)" }}
+      >
+        <div className="pointer-events-auto mx-auto w-full max-w-md">
           {step < TOTAL_STEPS ? (
             <Button
               variant="hero"
               size="xl"
-              className="w-full"
+              className="w-full shadow-[0_12px_30px_rgba(217,119,6,0.45)]"
               disabled={!canContinue}
               onClick={() => setStep(step + 1)}
+              data-testid="log-continue-button"
             >
               Continue →
             </Button>
           ) : (
-            <Button variant="hero" size="xl" className="w-full" onClick={handleCalculate}>
+            <Button
+              variant="hero"
+              size="xl"
+              className="w-full shadow-[0_12px_30px_rgba(217,119,6,0.45)]"
+              onClick={handleCalculate}
+              data-testid="log-calculate-button"
+            >
               Calculate my score →
             </Button>
           )}
