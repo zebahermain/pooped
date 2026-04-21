@@ -39,6 +39,9 @@ const Home = () => {
   const navigate = useNavigate();
   const [score, setScore] = useState(0);
   const [streak, setStreak] = useState(0);
+  const [streakPaused, setStreakPaused] = useState(false);
+  const [noMoveDays, setNoMoveDays] = useState(0);
+  const [showEveningCTA, setShowEveningCTA] = useState(false);
   const [weekly, setWeekly] = useState<{ day: string; score: number; date: string }[]>([]);
   const [profile, setProfile] = useState(getProfile());
   const [proOpen, setProOpen] = useState(false);
@@ -55,8 +58,12 @@ const Home = () => {
     setProfile(p);
     document.title = "Pooped — Your gut, gamified";
     setScore(getCurrentGutScore());
-    setStreak(getStreakData().currentStreak);
+    const s = getStreakData();
+    setStreak(s.currentStreak);
+    setStreakPaused(!!s.paused);
     setWeekly(getWeeklyScores());
+    setNoMoveDays(getConsecutiveNoMovementDays());
+    setShowEveningCTA(shouldShowEveningNoMovementCTA());
 
     // First-time reservoir fill modal: triggers the first time the user
     // returns to Home with at least 1 log + reservoir > 0.
