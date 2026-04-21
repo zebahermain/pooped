@@ -383,7 +383,7 @@ export const COLOR_META: Record<
   StoolColor,
   { hex: string; label: string; short: string }
 > = {
-  medium_brown: { hex: "#7B4F2E", label: "Healthy brown ✅", short: "Medium brown" },
+  medium_brown: { hex: "#7B4F2E", label: "Healthy brown", short: "Medium brown" },
   dark_brown: { hex: "#3D1F0D", label: "Dark brown", short: "Dark brown" },
   light_brown: { hex: "#C49A6C", label: "Light tan", short: "Light tan" },
   green: { hex: "#4A7C3F", label: "Greenish", short: "Green" },
