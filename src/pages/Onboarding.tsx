@@ -217,6 +217,13 @@ const Onboarding = () => {
             </SheetContent>
           </Sheet>
 
+          <Button
+            variant="hero"
+            size="xl"
+            className="mt-auto w-full"
+            disabled={!goal}
+            onClick={() => setStep(3)}
+          >
             Continue →
           </Button>
         </div>
