@@ -95,6 +95,7 @@ const LogEntry = () => {
 
   return (
     <AppShell>
+      <div className="pb-28">
       <header className="mb-6 flex items-center gap-3 pr-12">
         <button
           onClick={() => (step === 1 ? navigate("/") : setStep(step - 1))}
