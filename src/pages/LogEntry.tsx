@@ -404,12 +404,18 @@ const LogEntry = () => {
               Continue →
             </Button>
           ) : (
-            <Button variant="hero" size="xl" className="w-full" onClick={submit}>
+            <Button variant="hero" size="xl" className="w-full" onClick={handleCalculate}>
               Calculate my score →
             </Button>
           )}
         </div>
       </div>
+
+      <HonestyCheck
+        open={honestyOpen}
+        onConfirm={submit}
+        onDeny={handleHonestyDeny}
+      />
     </AppShell>
   );
 };
