@@ -22,14 +22,15 @@ export interface Profile {
 export interface PoopLog {
   id: string;
   timestamp: number;
-  bristolType: number; // 1-7
+  bristolType: number; // 0 = no movement, 1-7 Bristol scale
   color: StoolColor;
-  frequency: number; // which # of the day (1,2,3,4)
+  frequency: number; // which # of the day (0 for no-movement, 1..4 otherwise)
   tags?: string[];
   foodTags?: string[];
   symptoms?: string[];
   notes?: string;
   gutScore: number;
+  noMovement?: boolean;
 }
 
 export const FOOD_TAG_OPTIONS: { id: string; label: string; emoji: string }[] = [
@@ -194,6 +195,7 @@ export interface StreakData {
   currentStreak: number;
   lastLogDate: string | null;
   longestStreak: number;
+  paused?: boolean; // true when 3+ consecutive no-movement days
 }
 
 const PROFILE_KEY = "pooped_profile";
