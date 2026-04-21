@@ -59,7 +59,7 @@ export type Database = {
           id: string
           recipient_name: string
           sender_avatar: string
-          sender_id: string
+          sender_id: string | null
           sender_name: string
           style: string
           units: number
@@ -69,7 +69,7 @@ export type Database = {
           id?: string
           recipient_name: string
           sender_avatar?: string
-          sender_id: string
+          sender_id?: string | null
           sender_name?: string
           style: string
           units: number
@@ -79,7 +79,7 @@ export type Database = {
           id?: string
           recipient_name?: string
           sender_avatar?: string
-          sender_id?: string
+          sender_id?: string | null
           sender_name?: string
           style?: string
           units?: number

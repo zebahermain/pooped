@@ -124,6 +124,25 @@ export default {
           "50%": { transform: "scale(0.78) rotate(3deg)" },
           "75%": { transform: "scale(0.55) rotate(-4deg)" },
         },
+        "launch-arc": {
+          "0%": { transform: "translate(-50%, 0) scale(1) rotate(0deg)", opacity: "1" },
+          "50%": { transform: "translate(-50%, -50vh) scale(1.4) rotate(360deg)", opacity: "1" },
+          "100%": { transform: "translate(-50%, -110vh) scale(0.8) rotate(720deg)", opacity: "0.9" },
+        },
+        "emoji-rain": {
+          "0%": { transform: "translateY(-20vh) rotate(0deg)", opacity: "0" },
+          "10%": { opacity: "1" },
+          "100%": { transform: "translateY(120vh) rotate(540deg)", opacity: "1" },
+        },
+        "brown-flash": {
+          "0%, 100%": { opacity: "0" },
+          "50%": { opacity: "1" },
+        },
+        "launched-pop": {
+          "0%": { transform: "scale(0)", opacity: "0" },
+          "60%": { transform: "scale(1.3)", opacity: "1" },
+          "100%": { transform: "scale(1)", opacity: "1" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -136,6 +155,10 @@ export default {
         "screen-shake": "screen-shake 0.6s cubic-bezier(.36,.07,.19,.97) both",
         "splat-pop": "splat-pop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards",
         gurgle: "gurgle 0.6s ease-in-out infinite",
+        "launch-arc": "launch-arc 1.6s cubic-bezier(0.22, 1, 0.36, 1) forwards",
+        "emoji-rain": "emoji-rain linear forwards",
+        "brown-flash": "brown-flash 0.2s ease-out forwards",
+        "launched-pop": "launched-pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards",
       },
     },
   },

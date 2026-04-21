@@ -12,9 +12,24 @@ export interface ReservoirState {
   notified: boolean; // user has seen the "you can launch" dot at least once
 }
 
-export const LAUNCH_THRESHOLD = 50;
+export const LAUNCH_THRESHOLD = 10;
 export const BASE_MAX = 500;
 export const MAX_GROWTH_PER_30_DAYS = 100;
+
+/** One-time "Fill to 10 to launch 🚀" tooltip shown on the reservoir screen. */
+const LAUNCH_TIP_KEY = "pooped_reservoir_launch_tip_seen";
+export const hasSeenLaunchTip = () => {
+  try {
+    return localStorage.getItem(LAUNCH_TIP_KEY) === "1";
+  } catch {
+    return true;
+  }
+};
+export const markLaunchTipSeen = () => {
+  try {
+    localStorage.setItem(LAUNCH_TIP_KEY, "1");
+  } catch {}
+};
 
 export const unitsForBristol = (bristolType: number): number => {
   if (bristolType === 4) return 30;

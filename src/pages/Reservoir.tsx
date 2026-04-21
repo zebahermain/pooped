@@ -1,21 +1,25 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Rocket, Info } from "lucide-react";
+import { Rocket } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { AppShell } from "@/components/AppShell";
 import { ToiletBowl } from "@/components/ToiletBowl";
+import { SendSheet } from "@/components/SendSheet";
 import {
   LAUNCH_THRESHOLD,
   acknowledgeLaunchDot,
   getGrade,
   getReservoirState,
+  hasSeenLaunchTip,
+  markLaunchTipSeen,
 } from "@/lib/reservoir";
 import { getProfile } from "@/lib/storage";
 
 const Reservoir = () => {
   const navigate = useNavigate();
   const [state, setState] = useState(getReservoirState());
+  const [sendOpen, setSendOpen] = useState(false);
+  const [showFirstTip, setShowFirstTip] = useState(false);
 
   useEffect(() => {
     if (!getProfile()) {
@@ -24,17 +28,27 @@ const Reservoir = () => {
     }
     document.title = "Your Reservoir 💩 — Pooped";
     setState(getReservoirState());
-    // Clear notification dot when user visits the tab.
     acknowledgeLaunchDot().catch(() => {});
+
+    if (!hasSeenLaunchTip()) {
+      setShowFirstTip(true);
+      // Auto-dismiss after 6s — and never show again.
+      const t = window.setTimeout(() => {
+        setShowFirstTip(false);
+        markLaunchTipSeen();
+      }, 6000);
+      return () => window.clearTimeout(t);
+    }
   }, [navigate]);
 
+  const refresh = () => setState(getReservoirState());
   const ratio = state.max > 0 ? state.units / state.max : 0;
   const grade = getGrade(state.units);
   const canLaunch = state.units >= LAUNCH_THRESHOLD;
-  const untilLaunch = Math.max(0, LAUNCH_THRESHOLD - state.units);
 
-  const handleLaunch = () => {
-    navigate("/send");
+  const dismissTip = () => {
+    setShowFirstTip(false);
+    markLaunchTipSeen();
   };
 
   return (
@@ -48,88 +62,67 @@ const Reservoir = () => {
         <ToiletBowl fillRatio={ratio} size={240} />
 
         <div className="mt-4 text-center">
-          <div className="text-sm text-muted-foreground">You have</div>
-          <div className="mt-1 text-4xl font-extrabold">
+          <div className="text-4xl font-extrabold" data-testid="reservoir-units">
             <span className="bg-gradient-to-br from-primary to-primary-glow bg-clip-text text-transparent">
-              {state.units}
+              You have {state.units}
             </span>
             <span className="ml-2 text-2xl text-muted-foreground">
-              / {state.max}
+              / {state.max} units
             </span>
           </div>
-          <div className="mt-1 text-base font-semibold">
-            units of <span className="text-primary">{grade}</span> 💩
+          <div className="mt-2 inline-flex items-center rounded-full bg-accent px-4 py-1.5 text-sm font-bold text-accent-foreground">
+            {grade}
           </div>
         </div>
 
-        <div className="mt-5 w-full">
+        <div className="relative mt-6 w-full">
           <div className="h-3 w-full overflow-hidden rounded-full bg-muted">
             <div
               className="h-full gradient-warm transition-all duration-700"
               style={{ width: `${Math.min(100, ratio * 100)}%` }}
             />
           </div>
-          <div className="mt-1 flex justify-between text-[11px] text-muted-foreground">
-            <span>0</span>
-            <span>Launch ready at {LAUNCH_THRESHOLD}</span>
-            <span>{state.max}</span>
-          </div>
+
+          {showFirstTip && (
+            <div
+              onClick={dismissTip}
+              className="absolute -top-12 left-1/2 -translate-x-1/2 cursor-pointer whitespace-nowrap rounded-xl bg-primary px-3 py-2 text-xs font-bold text-primary-foreground shadow-warm animate-fade-in"
+              role="tooltip"
+              data-testid="first-launch-tip"
+            >
+              Fill to {LAUNCH_THRESHOLD} to launch 🚀
+              <span className="absolute -bottom-1 left-1/2 h-2 w-2 -translate-x-1/2 rotate-45 bg-primary" />
+            </div>
+          )}
         </div>
       </section>
 
       <div className="mt-8">
-        {canLaunch ? (
-          <Button
-            variant="hero"
-            size="xl"
-            className="w-full gap-2"
-            onClick={handleLaunch}
-          >
-            <Rocket className="h-5 w-5" />
-            Launch 💩
-          </Button>
-        ) : (
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <span className="block">
-                  <Button
-                    variant="hero"
-                    size="xl"
-                    className="pointer-events-none w-full gap-2 opacity-50"
-                    disabled
-                  >
-                    <Rocket className="h-5 w-5" />
-                    Launch 💩
-                  </Button>
-                </span>
-              </TooltipTrigger>
-              <TooltipContent>Keep logging to fill up</TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        )}
-        {!canLaunch && (
-          <p className="mt-2 text-center text-xs text-muted-foreground">
-            {untilLaunch} more units until you can launch
+        <Button
+          variant={canLaunch ? "hero" : "soft"}
+          size="xl"
+          className={`w-full gap-2 ${!canLaunch ? "opacity-60" : ""}`}
+          onClick={() => canLaunch && setSendOpen(true)}
+          disabled={!canLaunch}
+          data-testid="launch-button"
+        >
+          <Rocket className="h-5 w-5" />
+          {canLaunch ? "Launch 💩" : "Keep logging to unlock"}
+        </Button>
+
+        {canLaunch && (
+          <p className="mt-3 text-center text-sm font-semibold text-muted-foreground">
+            Your friends won't know what hit them 😈
           </p>
         )}
       </div>
 
-      <section className="mt-8 rounded-2xl border border-border bg-card p-4 shadow-card">
-        <div className="flex items-center gap-2">
-          <Info className="h-4 w-4 text-primary" />
-          <h3 className="text-sm font-bold">How it fills up</h3>
-        </div>
-        <ul className="mt-2 space-y-1 text-xs text-muted-foreground">
-          <li>• Type 4 (textbook): +30 units</li>
-          <li>• Type 3 / 5: +20 units</li>
-          <li>• Type 2 / 6: +10 units</li>
-          <li>• Type 1 / 7: +5 units</li>
-          <li>• Healthy brown: +10 bonus units</li>
-          <li>• 7-day streak: ×1.5 multiplier 🔥</li>
-          <li>• Capacity grows +100 every 30 days of logging</li>
-        </ul>
-      </section>
+      <SendSheet
+        open={sendOpen}
+        onOpenChange={setSendOpen}
+        reservoirUnits={state.units}
+        onSent={refresh}
+      />
     </AppShell>
   );
 };
