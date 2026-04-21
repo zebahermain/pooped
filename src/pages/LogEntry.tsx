@@ -281,6 +281,30 @@ const LogEntry = () => {
             </button>
           </div>
 
+          {!symptomTipDismissed && (
+            <div className="mt-5 rounded-2xl border border-primary/30 bg-gradient-to-br from-primary/10 to-primary-glow/5 p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex-1">
+                  <p className="text-sm font-bold">💡 First time logging symptoms?</p>
+                  <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+                    Tag what you ate and how you felt. After ~14 logs we'll
+                    surface your most likely food triggers. Skip whenever you like.
+                  </p>
+                </div>
+                <button
+                  onClick={() => {
+                    localStorage.setItem("pooped.symptomTipSeen", "1");
+                    setSymptomTipDismissed(true);
+                  }}
+                  className="shrink-0 rounded-full px-2 text-lg text-muted-foreground hover:text-foreground"
+                  aria-label="Dismiss tip"
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+          )}
+
           <div className="mt-5">
             <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
               🍽️ What did you eat / drink?
