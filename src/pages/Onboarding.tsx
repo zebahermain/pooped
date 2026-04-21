@@ -134,53 +134,6 @@ const Onboarding = () => {
             ))}
           </div>
 
-          <Sheet>
-            <SheetTrigger asChild>
-              <button className="mt-4 flex items-center justify-center gap-1.5 text-sm font-medium text-muted-foreground underline underline-offset-4 transition-colors hover:text-primary">
-                <Info className="h-4 w-4" />
-                What is IBS / IBD?
-              </button>
-            </SheetTrigger>
-            <SheetContent side="bottom" className="rounded-t-3xl">
-              <SheetHeader className="text-left">
-                <SheetTitle className="text-2xl">What is IBS / IBD? 🤔</SheetTitle>
-                <SheetDescription className="sr-only">
-                  Explainer about IBS and IBD
-                </SheetDescription>
-              </SheetHeader>
-              <div className="mt-4 space-y-4 text-sm leading-relaxed">
-                <div className="rounded-2xl border border-border bg-card p-4">
-                  <p className="font-bold text-foreground">
-                    🌀 IBS — Irritable Bowel Syndrome
-                  </p>
-                  <p className="mt-1 text-muted-foreground">
-                    A common condition causing cramps, bloating, gas, diarrhoea or
-                    constipation. The gut is overly sensitive but not physically
-                    damaged. Triggers are often food, stress, or hormones.
-                  </p>
-                </div>
-                <div className="rounded-2xl border border-border bg-card p-4">
-                  <p className="font-bold text-foreground">
-                    🔥 IBD — Inflammatory Bowel Disease
-                  </p>
-                  <p className="mt-1 text-muted-foreground">
-                    Crohn's disease and ulcerative colitis. The gut is actually
-                    inflamed and needs medical treatment. Symptoms can include
-                    blood in stool, urgency, weight loss, and fatigue.
-                  </p>
-                </div>
-                <div className="rounded-2xl bg-primary/10 p-4">
-                  <p className="font-semibold text-foreground">How Pooped helps 💩</p>
-                  <p className="mt-1 text-muted-foreground">
-                    Logging daily helps you spot food triggers, track flare-ups, and
-                    share clear data with your doctor. We're not a diagnosis — just a
-                    very honest journal.
-                  </p>
-                </div>
-              </div>
-            </SheetContent>
-          </Sheet>
-
           <Button
             variant="hero"
             size="xl"
