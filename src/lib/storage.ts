@@ -19,6 +19,8 @@ export interface Profile {
   createdAt: number;
 }
 
+export type BloodPresence = "paper_only" | "in_bowl";
+
 export interface PoopLog {
   id: string;
   timestamp: number;
@@ -31,6 +33,14 @@ export interface PoopLog {
   notes?: string;
   gutScore: number;
   noMovement?: boolean;
+  /** Dietary / medication causes the user ticked on the color context check. */
+  colorContext?: string[];
+  /** True if the user confirmed at least one context chip for a flagged color. */
+  colorContextExplained?: boolean;
+  /** null (or undefined) = user answered "no blood" or it wasn't asked. */
+  bloodPresence?: BloodPresence;
+  /** The exact smart-prompt text shown when this note was written. */
+  notePrompt?: string;
 }
 
 export const FOOD_TAG_OPTIONS: { id: string; label: string; emoji: string }[] = [
@@ -448,4 +458,13 @@ export const wipeLegacy = () => {
     localStorage.removeItem("pooped:logs");
     localStorage.removeItem("pooped:profile");
   } catch {}
+};
+
+// How many times the user has logged "blood in the bowl" in the last N days.
+// Used to drive the escalated alert on Result when it happens 2+ times / week.
+export const countBloodInBowlLastNDays = (days = 7): number => {
+  const cutoff = Date.now() - days * 24 * 60 * 60 * 1000;
+  return getLogs().filter(
+    (l) => l.timestamp >= cutoff && l.bloodPresence === "in_bowl"
+  ).length;
 };
