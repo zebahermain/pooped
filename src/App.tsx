@@ -37,6 +37,7 @@ const ProfileSyncer = () => {
 
 const RootRouter = () => {
   const { session, loading } = useAuth();
+  const { pathname } = useLocation();
   const [checkingProfile, setCheckingProfile] = useState(true);
   const [hasRemoteProfile, setHasRemoteProfile] = useState(false);
   const localProfile = getProfile();
@@ -48,7 +49,12 @@ const RootRouter = () => {
           .then(({ data }) => {
             setHasRemoteProfile(!!data);
             setCheckingProfile(false);
+          })
+          .catch(() => {
+            setCheckingProfile(false);
           });
+      } else {
+        setCheckingProfile(false);
       }
     }
   }, [session, loading]);
@@ -61,8 +67,12 @@ const RootRouter = () => {
     );
   }
 
-  if (session && !hasRemoteProfile) return <Navigate to="/onboarding" replace />;
-  if (!session && !localProfile) return <Navigate to="/auth" replace state={{ mode: "signin" }} />;
+  const isAuthPath = ["/auth", "/onboarding", "/confirm-email"].includes(pathname);
+
+  if (!isAuthPath) {
+    if (session && !hasRemoteProfile) return <Navigate to="/onboarding" replace />;
+    if (!session && !localProfile) return <Navigate to="/auth" replace state={{ mode: "signin" }} />;
+  }
 
   return (
     <Routes>
