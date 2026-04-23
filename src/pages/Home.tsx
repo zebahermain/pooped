@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { Lock, Sparkles } from "lucide-react";
+import { useNavigate, Link } from "react-router-dom";
+import { Lock, Sparkles, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
@@ -15,6 +15,7 @@ import { FirstReservoirModal } from "@/components/FirstReservoirModal";
 import { StreakStrip } from "@/components/StreakStrip";
 import { DailyChallengeCard } from "@/components/DailyChallengeCard";
 import { toast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 import {
   addToWaitlist,
   getCurrentGutScore,
@@ -39,6 +40,7 @@ import {
 
 const Home = () => {
   const navigate = useNavigate();
+  const { session } = useAuth();
   const [score, setScore] = useState(0);
   const [noMoveDays, setNoMoveDays] = useState(0);
   const [showEveningCTA, setShowEveningCTA] = useState(false);
@@ -48,6 +50,7 @@ const Home = () => {
   const [email, setEmail] = useState("");
   const [firstFillOpen, setFirstFillOpen] = useState(false);
   const [showSuspiciousNudge, setShowSuspiciousNudge] = useState(false);
+  const [showGuestBanner, setShowGuestBanner] = useState(false);
 
   useEffect(() => {
     const p = getProfile();
@@ -62,8 +65,6 @@ const Home = () => {
     setNoMoveDays(getConsecutiveNoMovementDays());
     setShowEveningCTA(shouldShowEveningNoMovementCTA());
 
-    // First-time reservoir fill modal: triggers the first time the user
-    // returns to Home with at least 1 log + reservoir > 0.
     const r = getReservoirState();
     if (r.units > 0 && getLogs().length >= 1 && !hasSeenFirstFill()) {
       setFirstFillOpen(true);
@@ -73,7 +74,12 @@ const Home = () => {
     if (!hasSeenSuspiciousNudge() && hasSuspiciousPattern()) {
       setShowSuspiciousNudge(true);
     }
-  }, [navigate]);
+
+    if (!session) {
+      const dismissed = sessionStorage.getItem("guest_banner_dismissed");
+      if (!dismissed) setShowGuestBanner(true);
+    }
+  }, [navigate, session]);
 
   const dismissSuspiciousNudge = () => {
     markSuspiciousNudgeSeen();
@@ -95,6 +101,26 @@ const Home = () => {
 
   return (
     <AppShell>
+      {showGuestBanner && (
+        <div className="mb-4 relative rounded-xl border border-border bg-card p-4 animate-in fade-in slide-in-from-top-2">
+          <button 
+            onClick={() => {
+              setShowGuestBanner(false);
+              sessionStorage.setItem("guest_banner_dismissed", "true");
+            }}
+            className="absolute right-3 top-3 text-muted-foreground hover:text-foreground"
+          >
+            <X className="h-4 w-4" />
+          </button>
+          <p className="text-sm font-medium pr-6">
+            You're in guest mode — your data is only saved on this device.
+          </p>
+          <Link to="/auth" state={{ mode: "signup" }} className="mt-2 inline-block text-sm text-primary font-bold">
+            Create free account →
+          </Link>
+        </div>
+      )}
+
       <header className="mb-2 pr-14">
         <p className="text-sm text-muted-foreground">Welcome back</p>
         <h1 className="text-2xl font-bold">
