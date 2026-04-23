@@ -13,6 +13,7 @@ import {
   isAlertColor,
 } from "@/lib/storage";
 import { COLOR_CONTEXT, isFlaggedColor } from "@/lib/colorContext";
+import { ChallengeConfetti } from "@/components/ChallengeConfetti";
 
 const Result = () => {
   const { score: idParam } = useParams();
@@ -21,6 +22,26 @@ const Result = () => {
   const log = useMemo(() => getLogs().find((l) => l.id === idParam), [idParam]);
   const score = log?.gutScore ?? 0;
   const [animated, setAnimated] = useState(0);
+  const [confettiTrigger, setConfettiTrigger] = useState<string | null>(null);
+
+  // Pick up pending challenge confetti stashed by LogEntry.submit.
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem("pooped.pending_challenge_confetti");
+      if (!raw) return;
+      const c = JSON.parse(raw) as { date: string; bonusUnits: number };
+      sessionStorage.removeItem("pooped.pending_challenge_confetti");
+      setConfettiTrigger(`${c.date}-${Date.now()}`);
+      toast({
+        title: `Daily challenge complete! 🎉`,
+        description: `+${c.bonusUnits} reservoir units added.`,
+      });
+      const t = window.setTimeout(() => setConfettiTrigger(null), 1800);
+      return () => window.clearTimeout(t);
+    } catch {
+      // noop
+    }
+  }, []);
 
   useEffect(() => {
     if (!log) return;
@@ -106,6 +127,7 @@ const Result = () => {
 
   return (
     <div className="mx-auto flex min-h-screen w-full max-w-md flex-col px-6 py-10 animate-fade-in">
+      <ChallengeConfetti trigger={confettiTrigger} />
       <div className="absolute right-4 top-4">
         <ThemeToggle />
       </div>

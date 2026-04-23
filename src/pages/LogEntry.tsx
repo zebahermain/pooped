@@ -23,6 +23,7 @@ import {
 import { applyLogToReservoir } from "@/lib/reservoir";
 import { COLOR_CONTEXT, isFlaggedColor } from "@/lib/colorContext";
 import { getSmartPrompt } from "@/lib/smartPrompt";
+import { creditReservoirBonus, evaluateAndMarkCompletion } from "@/lib/challenges";
 
 const colorOrder: StoolColor[] = [
   "medium_brown",
@@ -112,6 +113,20 @@ const LogEntry = () => {
     saveLog(log);
     try {
       await applyLogToReservoir(log);
+    } catch (e) {
+      console.error(e);
+    }
+    // Daily-challenge auto-completion — evaluated *after* the log is saved
+    // so getTodaysLogs() and getStreakData() see it.
+    try {
+      const completion = evaluateAndMarkCompletion();
+      if (completion) {
+        creditReservoirBonus(completion.bonusUnits);
+        sessionStorage.setItem(
+          "pooped.pending_challenge_confetti",
+          JSON.stringify(completion)
+        );
+      }
     } catch (e) {
       console.error(e);
     }

@@ -12,13 +12,14 @@ import { DoctorLinkSmall } from "@/components/DoctorLinkSmall";
 import { IBSWeeklyTip } from "@/components/IBSWeeklyTip";
 import { ReservoirCard } from "@/components/ReservoirCard";
 import { FirstReservoirModal } from "@/components/FirstReservoirModal";
+import { StreakStrip } from "@/components/StreakStrip";
+import { DailyChallengeCard } from "@/components/DailyChallengeCard";
 import { toast } from "@/hooks/use-toast";
 import {
   addToWaitlist,
   getCurrentGutScore,
   getLogs,
   getProfile,
-  getStreakData,
   getWeeklyScores,
 } from "@/lib/storage";
 import {
@@ -39,8 +40,6 @@ import {
 const Home = () => {
   const navigate = useNavigate();
   const [score, setScore] = useState(0);
-  const [streak, setStreak] = useState(0);
-  const [streakPaused, setStreakPaused] = useState(false);
   const [noMoveDays, setNoMoveDays] = useState(0);
   const [showEveningCTA, setShowEveningCTA] = useState(false);
   const [weekly, setWeekly] = useState<{ day: string; score: number; date: string }[]>([]);
@@ -59,9 +58,6 @@ const Home = () => {
     setProfile(p);
     document.title = "Pooped — Your gut, gamified";
     setScore(getCurrentGutScore());
-    const s = getStreakData();
-    setStreak(s.currentStreak);
-    setStreakPaused(!!s.paused);
     setWeekly(getWeeklyScores());
     setNoMoveDays(getConsecutiveNoMovementDays());
     setShowEveningCTA(shouldShowEveningNoMovementCTA());
@@ -108,25 +104,18 @@ const Home = () => {
 
       <section className="mt-6 flex flex-col items-center">
         <GutScoreRing score={score} />
-        <div className="mt-4 inline-flex items-center gap-2 rounded-full bg-accent px-4 py-2">
-          <span className="text-xl">🔥</span>
-          <span className="font-semibold text-accent-foreground">
-            {streak} day streak
+        {noMoveDays === 2 && (
+          <span
+            className="mt-3 inline-flex items-center gap-2 text-xs text-warning"
+            title="Low activity — 2 no-movement days"
+          >
+            <span className="h-2 w-2 rounded-full bg-warning" />
+            Low activity
           </span>
-          {noMoveDays === 2 && !streakPaused && (
-            <span
-              className="h-2 w-2 rounded-full bg-warning"
-              title="Low activity — 2 no-movement days"
-              aria-label="Low activity"
-            />
-          )}
-        </div>
-        {streakPaused && (
-          <p className="mt-2 text-xs text-muted-foreground">
-            Streak paused — not your fault. It'll resume when you're back to regular movement. 💪
-          </p>
         )}
       </section>
+
+      <StreakStrip />
 
       {showSuspiciousNudge && (
         <div className="mt-6 flex items-start gap-3 rounded-2xl border border-warning/40 bg-warning/10 p-4">
@@ -172,10 +161,12 @@ const Home = () => {
         </div>
       )}
 
+      <DailyChallengeCard />
+
       <Button
         variant="hero"
         size="xl"
-        className="mt-8 w-full"
+        className="mt-4 w-full"
         onClick={() => navigate("/log")}
       >
         Log a poop 💩

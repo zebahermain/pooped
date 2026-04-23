@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { AppShell } from "@/components/AppShell";
+import { StreakMonthCalendar } from "@/components/StreakMonthCalendar";
 import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { pushProfileToCloud } from "@/lib/profileSync";
@@ -97,6 +98,14 @@ const ProfilePage = () => {
           </div>
         </section>
       )}
+
+      <section className="mt-6">
+        <div className="mb-3 flex items-center justify-between">
+          <h3 className="font-bold">Streak calendar</h3>
+          <span className="text-xs text-muted-foreground">Tap a day to see its score</span>
+        </div>
+        <StreakMonthCalendar />
+      </section>
 
       {/* Edit */}
       <section className="mt-6 rounded-3xl bg-card p-5 shadow-card border border-border">
