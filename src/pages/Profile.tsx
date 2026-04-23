@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { AppShell } from "@/components/AppShell";
 import { StreakMonthCalendar } from "@/components/StreakMonthCalendar";
+import { PersonalityCard } from "@/components/PersonalityCard";
+import { ReportCard } from "@/components/ReportCard";
 import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { pushProfileToCloud } from "@/lib/profileSync";
@@ -105,6 +107,20 @@ const ProfilePage = () => {
           <span className="text-xs text-muted-foreground">Tap a day to see its score</span>
         </div>
         <StreakMonthCalendar />
+      </section>
+
+      <section className="mt-6">
+        <div className="mb-3 flex items-center">
+          <h3 className="font-bold">Your Gut Personality</h3>
+        </div>
+        <PersonalityCard />
+      </section>
+
+      <section className="mt-6">
+        <div className="mb-3 flex items-center">
+          <h3 className="font-bold">Last Month's Report Card</h3>
+        </div>
+        <ReportCard />
       </section>
 
       {/* Edit */}

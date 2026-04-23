@@ -21,6 +21,7 @@ export type Database = {
           frequency_pref: string | null
           goal: string | null
           id: string
+          is_pro: boolean
           name: string
           reservoir_max: number
           reservoir_notified: boolean
@@ -33,6 +34,7 @@ export type Database = {
           frequency_pref?: string | null
           goal?: string | null
           id: string
+          is_pro?: boolean
           name?: string
           reservoir_max?: number
           reservoir_notified?: boolean
@@ -45,11 +47,60 @@ export type Database = {
           frequency_pref?: string | null
           goal?: string | null
           id?: string
+          is_pro?: boolean
           name?: string
           reservoir_max?: number
           reservoir_notified?: boolean
           reservoir_units?: number
           updated_at?: string
+        }
+        Relationships: []
+      }
+      monthly_report_cards: {
+        Row: {
+          id: string
+          user_id: string
+          month: string
+          consistency_grade: string
+          color_health_grade: string
+          frequency_grade: string
+          streak_grade: string
+          overall_gpa: number
+          days_logged: number
+          days_in_month: number
+          average_gut_score: number
+          ai_comment: string | null
+          generated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          month: string
+          consistency_grade: string
+          color_health_grade: string
+          frequency_grade: string
+          streak_grade: string
+          overall_gpa: number
+          days_logged: number
+          days_in_month: number
+          average_gut_score: number
+          ai_comment?: string | null
+          generated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          month?: string
+          consistency_grade?: string
+          color_health_grade?: string
+          frequency_grade?: string
+          streak_grade?: string
+          overall_gpa?: number
+          days_logged?: number
+          days_in_month?: number
+          average_gut_score?: number
+          ai_comment?: string | null
+          generated_at?: string
         }
         Relationships: []
       }
