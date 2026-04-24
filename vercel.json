@@ -5,6 +5,10 @@
   "outputDirectory": "dist",
   "rewrites": [
     {
+      "source": "/splat/:id",
+      "destination": "/api/splat"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }

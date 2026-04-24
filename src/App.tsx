@@ -35,9 +35,8 @@ const ProfileSyncer = () => {
   return null;
 };
 
-const RootRouter = () => {
+const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { session, loading } = useAuth();
-  const { pathname } = useLocation();
   const [checkingProfile, setCheckingProfile] = useState(true);
   const [hasRemoteProfile, setHasRemoteProfile] = useState(false);
   const localProfile = getProfile();
@@ -67,27 +66,27 @@ const RootRouter = () => {
     );
   }
 
-  const isAuthPath = ["/auth", "/onboarding", "/confirm-email"].includes(pathname);
+  if (!session && !localProfile) return <Navigate to="/auth" replace state={{ mode: "signin" }} />;
+  if (session && !hasRemoteProfile) return <Navigate to="/onboarding" replace />;
 
-  if (!isAuthPath) {
-    if (session && !hasRemoteProfile) return <Navigate to="/onboarding" replace />;
-    if (!session && !localProfile) return <Navigate to="/auth" replace state={{ mode: "signin" }} />;
-  }
+  return <>{children}</>;
+};
 
+const RootRouter = () => {
   return (
     <Routes>
       <Route path="/" element={<Index />} />
       <Route path="/onboarding" element={<Onboarding />} />
       <Route path="/auth" element={<AuthPage />} />
       <Route path="/confirm-email" element={<ConfirmEmail />} />
-      <Route path="/log" element={<LogEntry />} />
-      <Route path="/log/no-movement" element={<NoMovement />} />
-      <Route path="/result/:score" element={<Result />} />
-      <Route path="/history" element={<History />} />
-      <Route path="/reservoir" element={<Reservoir />} />
-      <Route path="/send" element={<Send />} />
       <Route path="/splat/:id" element={<Splat />} />
-      <Route path="/profile" element={<ProfilePage />} />
+      <Route path="/log" element={<ProtectedRoute><LogEntry /></ProtectedRoute>} />
+      <Route path="/log/no-movement" element={<ProtectedRoute><NoMovement /></ProtectedRoute>} />
+      <Route path="/result/:score" element={<ProtectedRoute><Result /></ProtectedRoute>} />
+      <Route path="/history" element={<ProtectedRoute><History /></ProtectedRoute>} />
+      <Route path="/reservoir" element={<ProtectedRoute><Reservoir /></ProtectedRoute>} />
+      <Route path="/send" element={<ProtectedRoute><Send /></ProtectedRoute>} />
+      <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
