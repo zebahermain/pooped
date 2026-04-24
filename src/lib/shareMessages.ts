@@ -1,8 +1,7 @@
 import { type ReservoirGrade } from "./reservoir";
 
-// Using Unicode escapes for emojis to prevent rendering issues in share interfaces
-const POOP = "\uD83D\uDCA9";
-const EYES = "\uD83D\uDC40";
+const POOP = "💩";
+const EYES = "👀";
 
 export const SHARE_MESSAGE_TEMPLATES = [
   (n: string, s: string, u: number, g: ReservoirGrade, l: string) => 

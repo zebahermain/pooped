@@ -9,18 +9,9 @@ export interface DeliveryStyleMeta {
   id: DeliveryStyle;
   label: string;
   emoji: string;
-  description: string; // one-word descriptor
+  description: string;
 }
 
-/**
- * Exact copy-deck per product brief: 2×2 grid on step 2 of the send sheet.
- *   💥 Cannon Blast — Devastating
- *   🌧️ Monsoon — Relentless
- *   🤫 Stealth Drop — Unexpected
- *   🎁 Surprise Gift — Deceptive
- *
- * IDs stay the same to preserve the DB CHECK constraint on splats.style.
- */
 export const DELIVERY_STYLES: DeliveryStyleMeta[] = [
   { id: "cannon", label: "Cannon Blast", emoji: "💥", description: "Devastating" },
   { id: "monsoon", label: "Monsoon", emoji: "🌧️", description: "Relentless" },
@@ -35,7 +26,7 @@ export type ShareMethod = "whatsapp" | "share" | "copy";
 
 export interface Splat {
   id: string;
-  sender_id: string | null; // nullable — guests can now send
+  sender_id: string | null;
   sender_name: string;
   sender_avatar: string;
   recipient_name: string;
@@ -46,17 +37,11 @@ export interface Splat {
 
 export interface CreateSplatInput {
   recipient_name: string;
-  sender_name_override?: string; // used by guest sends when no profile exists
+  sender_name_override?: string;
   units: number;
   style: DeliveryStyle;
 }
 
-/**
- * Insert a splat row. Works both for authenticated and guest senders.
- *   - Authenticated: sender_id = auth.uid(), name from profile.
- *   - Guest: sender_id = null, name from sender_name_override (or "Someone").
- *     Rate-limited client-side to 3 sends / rolling hour.
- */
 export const createSplat = async (input: CreateSplatInput): Promise<Splat> => {
   const { data: auth } = await supabase.auth.getUser();
   const user = auth?.user ?? null;
@@ -66,14 +51,11 @@ export const createSplat = async (input: CreateSplatInput): Promise<Splat> => {
     const rl = canGuestSendNow();
     if (!rl.ok) {
       const minutes = Math.ceil(rl.resetInMs / 60000);
-      throw new Error(
-        `Guest send limit reached. Try again in ~${minutes} min, or sign in for unlimited.`
-      );
+      throw new Error(`Guest send limit reached. Try again in ~${minutes} min, or sign in for unlimited.`);
     }
   }
 
-  const senderName =
-    (user ? profile?.name : input.sender_name_override)?.trim() || "Someone";
+  const senderName = (user ? profile?.name : input.sender_name_override)?.trim() || "Someone";
   const senderAvatar = profile?.avatar ?? "💩";
 
   const { data, error } = await supabase
@@ -94,21 +76,20 @@ export const createSplat = async (input: CreateSplatInput): Promise<Splat> => {
   return data as Splat;
 };
 
-/** Public-readable fetch by id — works for anonymous recipients. */
 export const fetchSplat = async (id: string): Promise<Splat | null> => {
-  const { data, error } = await supabase
-    .from("splats")
-    .select("*")
-    .eq("id", id)
-    .maybeSingle();
+  let query = supabase.from("splats").select("*");
+  
+  if (id.length === 8) {
+    query = query.like("id", `${id}%`);
+  } else {
+    query = query.eq("id", id);
+  }
+
+  const { data, error } = await query.maybeSingle();
   if (error) throw error;
   return (data as Splat) ?? null;
 };
 
-/**
- * Count of splats created since local midnight (today).
- * Used by the "💩 X splats launched today" live counter on /splat/[id].
- */
 export const fetchSplatsToday = async (): Promise<number> => {
   const startOfDay = new Date();
   startOfDay.setHours(0, 0, 0, 0);
@@ -120,10 +101,6 @@ export const fetchSplatsToday = async (): Promise<number> => {
   return count ?? 0;
 };
 
-/**
- * Drain `units` from the local reservoir and push to cloud if signed in.
- * Returns the new reservoir balance.
- */
 export const drainReservoir = async (units: number): Promise<number> => {
   const LOCAL_KEY = "pooped_reservoir";
   const current = getReservoirState();
@@ -141,9 +118,7 @@ export const drainReservoir = async (units: number): Promise<number> => {
         .update({ reservoir_units: next.units })
         .eq("id", auth.user.id);
     }
-  } catch {
-    // ignore — local is source of truth for guests
-  }
+  } catch {}
 
   return next.units;
 };
@@ -153,11 +128,6 @@ export const buildSplatUrl = (splatId: string): string => {
   return `${window.location.origin}/splat/${splatId}`;
 };
 
-/**
- * Viral share line per brief:
- *   "[Their name] just got hit with [X] units of [grade] 💩 by [sender name].
- *    See the damage → [splat link]"
- */
 export const buildShareText = (params: {
   recipient: string;
   sender: string;
@@ -170,10 +140,6 @@ export const buildShareText = (params: {
 export const buildWhatsAppLink = (text: string): string =>
   `https://wa.me/?text=${encodeURIComponent(text)}`;
 
-/**
- * iMessage requires an `sms:` URL — works on iOS, graceful noop on other
- * platforms (browser simply won't open anything).
- */
 export const buildIMessageLink = (text: string): string =>
   `sms:&body=${encodeURIComponent(text)}`;
 
