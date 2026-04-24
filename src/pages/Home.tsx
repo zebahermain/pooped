@@ -38,7 +38,7 @@ import {
 
 const Home = () => {
   const navigate = useNavigate();
-  const { session } = useAuth();
+  const { session, loading } = useAuth();
   const [score, setScore] = useState(0);
   const [noMoveDays, setNoMoveDays] = useState(0);
   const [showEveningCTA, setShowEveningCTA] = useState(false);
@@ -71,11 +71,15 @@ const Home = () => {
       setShowSuspiciousNudge(true);
     }
 
-    if (!session) {
-      const dismissed = sessionStorage.getItem("guest_banner_dismissed");
-      if (!dismissed) setShowGuestBanner(true);
+    if (!loading) {
+      if (!session) {
+        const dismissed = sessionStorage.getItem("guest_banner_dismissed");
+        if (!dismissed) setShowGuestBanner(true);
+      } else {
+        setShowGuestBanner(false);
+      }
     }
-  }, [navigate, session]);
+  }, [navigate, session, loading]);
 
   const dismissSuspiciousNudge = () => {
     markSuspiciousNudgeSeen();
@@ -108,7 +112,7 @@ const Home = () => {
           >
             <X className="h-4 w-4" />
           </button>
-          <p className="text-sm font-medium pr-6">
+          <p className="text-sm font-medium pr-6 text-foreground">
             You're in guest mode — your data is only saved on this device.
           </p>
           <Link to="/auth" state={{ mode: "signup" }} className="mt-2 inline-block text-sm text-primary font-bold">
@@ -118,8 +122,8 @@ const Home = () => {
       )}
 
       <header className="mb-2 pr-14">
-        <p className="text-sm text-muted-foreground">Welcome back</p>
-        <h1 className="text-2xl font-bold">
+        <p className="text-sm text-muted-foreground font-medium">Welcome back</p>
+        <h1 className="text-2xl font-black text-foreground">
           Hey {profile.name} {profile.avatar}
         </h1>
       </header>
@@ -143,7 +147,7 @@ const Home = () => {
         <div className="mt-6 flex items-start gap-3 rounded-2xl border border-warning/40 bg-warning/10 p-4">
           <div className="text-2xl">🙏</div>
           <div className="flex-1">
-            <p className="text-sm font-semibold text-foreground">Heads up</p>
+            <p className="text-sm font-semibold text-foreground text-foreground">Heads up</p>
             <p className="mt-1 text-sm text-muted-foreground">
               Logging more than 3 times daily can skew your Gut Score. We trust you to keep it real.
             </p>
@@ -160,7 +164,7 @@ const Home = () => {
 
       {noMoveDays === 2 && (
         <div className="mt-6 rounded-2xl border border-warning/40 bg-warning/10 p-4">
-          <p className="text-sm font-semibold text-foreground">
+          <p className="text-sm font-semibold text-foreground text-foreground">
             Two days without a bowel movement
           </p>
           <p className="mt-1 text-sm text-muted-foreground">
@@ -172,7 +176,7 @@ const Home = () => {
 
       {noMoveDays >= 3 && (
         <div className="mt-6 rounded-2xl border border-destructive/40 bg-destructive/10 p-4">
-          <p className="text-sm font-semibold text-foreground">
+          <p className="text-sm font-semibold text-foreground text-foreground">
             3+ days without a movement
           </p>
           <p className="mt-1 text-sm text-muted-foreground">
@@ -188,7 +192,7 @@ const Home = () => {
       <Button
         variant="hero"
         size="xl"
-        className="mt-4 w-full"
+        className="mt-4 w-full h-14 font-black"
         onClick={() => navigate("/log")}
       >
         Log a poop 💩
@@ -220,7 +224,7 @@ const Home = () => {
             <Sparkles className="h-5 w-5 text-primary-foreground" />
           </div>
           <div className="flex-1">
-            <div className="flex items-center gap-2 font-semibold text-foreground">
+            <div className="flex items-center gap-2 font-semibold text-foreground text-foreground">
               Pooped Pro <Lock className="h-3.5 w-3.5 text-muted-foreground" />
             </div>
             <div className="text-xs text-muted-foreground blur-[2px] select-none">
