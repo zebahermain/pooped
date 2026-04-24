@@ -31,7 +31,7 @@ export const DELIVERY_STYLES: DeliveryStyleMeta[] = [
 export const getDeliveryStyleMeta = (id: string): DeliveryStyleMeta | undefined =>
   DELIVERY_STYLES.find((s) => s.id === id);
 
-export type ShareMethod = "whatsapp" | "imessage" | "copy";
+export type ShareMethod = "whatsapp" | "share" | "copy";
 
 export interface Splat {
   id: string;
