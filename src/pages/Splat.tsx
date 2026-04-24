@@ -17,6 +17,28 @@ import {
 
 const RAIN_COUNT = 26;
 
+const updateMetaTags = (title: string, description: string, image: string) => {
+  document.title = title;
+  
+  const setMeta = (property: string, content: string) => {
+    let tag = document.querySelector(`meta[property="${property}"]`);
+    if (!tag) {
+      tag = document.createElement('meta');
+      tag.setAttribute('property', property);
+      document.head.appendChild(tag);
+    }
+    tag.setAttribute('content', content);
+  };
+
+  setMeta('og:title', title);
+  setMeta('og:description', description);
+  setMeta('og:image', `${window.location.origin}${image}`);
+  setMeta('twitter:card', 'summary_large_image');
+  setMeta('twitter:title', title);
+  setMeta('twitter:description', description);
+  setMeta('twitter:image', `${window.location.origin}${image}`);
+};
+
 const SplatPage = () => {
   const { id } = useParams<{ id: string }>();
   const [splat, setSplat] = useState<Splat | null>(null);
@@ -50,7 +72,20 @@ const SplatPage = () => {
         if (!s) setError("This splat doesn't exist (or was deleted).");
         else {
           setSplat(s);
-          document.title = `${s.recipient_name} just got hit 💩 — Pooped`;
+          const grade = getGrade(s.units);
+          const sender = s.sender_name || "Someone";
+          const title = `${sender} just hit ${s.recipient_name} with ${s.units} units 💩`;
+          const description = "Open to see the damage and retaliate";
+          
+          const ogImages: Record<string, string> = {
+            cannon: "/og/cannon.png",
+            monsoon: "/og/monsoon.png",
+            stealth: "/og/stealth.png",
+            gentle: "/og/gift.png",
+          };
+          const image = ogImages[s.style] || "/og/cannon.png";
+          
+          updateMetaTags(title, description, image);
         }
         setLoading(false);
       })
