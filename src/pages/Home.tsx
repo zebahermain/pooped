@@ -6,7 +6,6 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { AppShell } from "@/components/AppShell";
 import { GutScoreRing } from "@/components/GutScoreRing";
-import { WeeklyChart } from "@/components/WeeklyChart";
 import { DoctorCard } from "@/components/DoctorCard";
 import { DoctorLinkSmall } from "@/components/DoctorLinkSmall";
 import { IBSWeeklyTip } from "@/components/IBSWeeklyTip";
@@ -21,7 +20,6 @@ import {
   getCurrentGutScore,
   getLogs,
   getProfile,
-  getWeeklyScores,
 } from "@/lib/storage";
 import {
   getReservoirState,
@@ -44,7 +42,6 @@ const Home = () => {
   const [score, setScore] = useState(0);
   const [noMoveDays, setNoMoveDays] = useState(0);
   const [showEveningCTA, setShowEveningCTA] = useState(false);
-  const [weekly, setWeekly] = useState<{ day: string; score: number; date: string }[]>([]);
   const [profile, setProfile] = useState(getProfile());
   const [proOpen, setProOpen] = useState(false);
   const [email, setEmail] = useState("");
@@ -61,7 +58,6 @@ const Home = () => {
     setProfile(p);
     document.title = "Pooped — Your gut, gamified";
     setScore(getCurrentGutScore());
-    setWeekly(getWeeklyScores());
     setNoMoveDays(getConsecutiveNoMovementDays());
     setShowEveningCTA(shouldShowEveningNoMovementCTA());
 
@@ -208,10 +204,6 @@ const Home = () => {
           Didn't go today? Log that too →
         </Button>
       )}
-
-      <section className="mt-8">
-        <WeeklyChart data={weekly} />
-      </section>
 
       <ReservoirCard />
 

@@ -2,7 +2,12 @@ import { useMemo } from "react";
 import { getStreakData, getLogs, type PoopLog } from "@/lib/storage";
 import { Check, Trophy } from "lucide-react";
 
-const toDateStr = (d: Date) => d.toISOString().slice(0, 10);
+const toDateStr = (d: Date) => {
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
 
 const getDayColor = (avgScore: number | null) => {
   if (avgScore === null) return null;
@@ -20,7 +25,7 @@ export const StreakStrip = () => {
   const weekData = useMemo(() => {
     const startOfWeek = new Date(today);
     const day = today.getDay();
-    const diff = today.getDate() - day + (day === 0 ? -6 : 1);
+    const diff = today.getDate() - (day === 0 ? 6 : day - 1);
     startOfWeek.setDate(diff);
     startOfWeek.setHours(0, 0, 0, 0);
 
