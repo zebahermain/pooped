@@ -11,18 +11,18 @@ import { AccountPromptDialog } from "@/components/AccountPromptDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { getProfile } from "@/lib/storage";
 import Index from "./pages/Index.tsx";
-import Onboarding from "./pages/Onboarding.tsx";
-import LogEntry from "./pages/LogEntry.tsx";
-import NoMovement from "./pages/NoMovement.tsx";
-import Result from "./pages/Result.tsx";
-import History from "./pages/History.tsx";
-import Reservoir from "./pages/Reservoir.tsx";
-import Send from "./pages/Send.tsx";
-import Splat from "./pages/Splat.tsx";
-import ProfilePage from "./pages/Profile.tsx";
-import AuthPage from "./pages/Auth.tsx";
-import ConfirmEmail from "./pages/ConfirmEmail.tsx";
-import NotFound from "./pages/NotFound.tsx";
+import Onboarding from "./onboarding.tsx";
+import LogEntry from "./LogEntry.tsx";
+import NoMovement from "./NoMovement.tsx";
+import Result from "./Result.tsx";
+import History from "./History.tsx";
+import Reservoir from "./Reservoir.tsx";
+import Send from "./Send.tsx";
+import Splat from "./Splat.tsx";
+import ProfilePage from "./Profile.tsx";
+import AuthPage from "./Auth.tsx";
+import ConfirmEmail from "./ConfirmEmail.tsx";
+import NotFound from "./NotFound.tsx";
 import { Loader2 } from "lucide-react";
 
 const queryClient = new QueryClient();
@@ -63,7 +63,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
       <div className="flex h-screen items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
-    );
+    ); innerHTML
   }
 
   if (!session && !localProfile) return <Navigate to="/auth" replace state={{ mode: "signin" }} />;
@@ -75,7 +75,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 const RootRouter = () => {
   return (
     <Routes>
-      <Route path="/" element={<Index />} />
+      <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
       <Route path="/onboarding" element={<Onboarding />} />
       <Route path="/auth" element={<AuthPage />} />
       <Route path="/confirm-email" element={<ConfirmEmail />} />
