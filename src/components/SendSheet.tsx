@@ -8,7 +8,6 @@ import { useAuth } from "@/hooks/useAuth";
 import { LaunchAnimation } from "@/components/LaunchAnimation";
 import {
   DELIVERY_STYLES,
-  buildShareText,
   buildSplatUrl,
   buildWhatsAppLink,
   createSplat,
@@ -18,6 +17,7 @@ import {
   type ShareMethod,
   type Splat,
 } from "@/lib/splats";
+import { getRandomShareText } from "@/lib/shareMessages";
 import { getProfile } from "@/lib/storage";
 
 interface Props {
@@ -29,6 +29,12 @@ interface Props {
 
 type Step = 1 | 2 | 3;
 
+const RECIPIENT_PLACEHOLDERS = [
+  "Name your victim 😈",
+  "Who's getting hit? 💩",
+  "Who deserves the splat?"
+];
+
 export const SendSheet = ({ open, onOpenChange, reservoirUnits, onSent }: Props) => {
   const { user } = useAuth();
   const [step, setStep] = useState<Step>(1);
@@ -38,6 +44,7 @@ export const SendSheet = ({ open, onOpenChange, reservoirUnits, onSent }: Props)
   const [style, setStyle] = useState<DeliveryStyle | null>(null);
   const [launching, setLaunching] = useState(false);
   const [resultSplat, setResultSplat] = useState<Splat | null>(null);
+  const [inputPlaceholder, setInputPlaceholder] = useState(RECIPIENT_PLACEHOLDERS[0]);
 
   useEffect(() => {
     if (!open) {
@@ -48,6 +55,9 @@ export const SendSheet = ({ open, onOpenChange, reservoirUnits, onSent }: Props)
       setStyle(null);
       setLaunching(false);
       setResultSplat(null);
+    } else {
+      const idx = Math.floor(Math.random() * RECIPIENT_PLACEHOLDERS.length);
+      setInputPlaceholder(RECIPIENT_PLACEHOLDERS[idx]);
     }
   }, [open]);
 
@@ -93,7 +103,8 @@ export const SendSheet = ({ open, onOpenChange, reservoirUnits, onSent }: Props)
     if (!resultSplat || !shareMethod) return;
     const splatUrl = buildSplatUrl(resultSplat.id);
     const grade = getGrade(resultSplat.units);
-    const text = buildShareText({
+    
+    const text = getRandomShareText({
       recipient: resultSplat.recipient_name,
       sender: resolvedSenderName,
       units: resultSplat.units,
@@ -115,7 +126,6 @@ export const SendSheet = ({ open, onOpenChange, reservoirUnits, onSent }: Props)
             url: splatUrl,
           });
         } catch (err) {
-          // User cancelled or error
         }
       } else {
         await navigator.clipboard?.writeText(text).catch(() => {});
@@ -135,7 +145,6 @@ export const SendSheet = ({ open, onOpenChange, reservoirUnits, onSent }: Props)
         data-testid="send-sheet"
       >
         <div className="mx-auto max-w-md">
-          {/* Tiny progress strip */}
           <div className="mb-8 flex h-1.5 gap-1.5">
             {[1, 2, 3].map((s) => (
               <div
@@ -158,7 +167,7 @@ export const SendSheet = ({ open, onOpenChange, reservoirUnits, onSent }: Props)
                 <Input
                   value={recipient}
                   onChange={(e) => setRecipient(e.target.value)}
-                  placeholder="Recipient's name"
+                  placeholder={inputPlaceholder}
                   maxLength={40}
                   className="h-14 rounded-2xl border-2 bg-muted/30 px-5 text-base font-bold transition-all focus:border-primary/50 focus:bg-background"
                   autoFocus
@@ -182,7 +191,6 @@ export const SendSheet = ({ open, onOpenChange, reservoirUnits, onSent }: Props)
               </p>
               
               <div className="mt-4 flex justify-between gap-6 px-2">
-                {/* WhatsApp */}
                 <button
                   onClick={() => handleStep1Select("whatsapp")}
                   className="group flex flex-col items-center gap-3 transition-transform active:scale-90"
@@ -196,7 +204,6 @@ export const SendSheet = ({ open, onOpenChange, reservoirUnits, onSent }: Props)
                   <span className="text-[11px] font-bold">WhatsApp</span>
                 </button>
 
-                {/* Copy Link */}
                 <button
                   onClick={() => handleStep1Select("copy")}
                   className="group flex flex-col items-center gap-3 transition-transform active:scale-90"
@@ -208,7 +215,6 @@ export const SendSheet = ({ open, onOpenChange, reservoirUnits, onSent }: Props)
                   <span className="text-[11px] font-bold">Copy link</span>
                 </button>
 
-                {/* Share (More) */}
                 <button
                   onClick={() => handleStep1Select("share")}
                   className="group flex flex-col items-center gap-3 transition-transform active:scale-90"
