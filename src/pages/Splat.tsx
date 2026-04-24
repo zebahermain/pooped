@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { Copy, MessageCircle } from "lucide-react";
+import { Copy, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { toast } from "@/hooks/use-toast";
@@ -15,23 +15,9 @@ import {
   type Splat,
 } from "@/lib/splats";
 
-/**
- * /splat/:id — the viral money screen.
- *
- * Phase 1 (0–2.5s): automatic hit animation
- *   • Hey [name]… text settles in
- *   • vibrate at 0.8s
- *   • 💩 rain cascades from the top (20–30 emojis, staggered)
- *   • at 1.5s: huge "SPLAT 💥" pops
- *   • brown overlay flashes briefly
- *
- * Phase 2 (settle): splat card reveals
- * Phase 3 (always): Retaliate CTA + forward icons + live "splats today" counter
- */
-
 const RAIN_COUNT = 26;
 
-const Splat = () => {
+const SplatPage = () => {
   const { id } = useParams<{ id: string }>();
   const [splat, setSplat] = useState<Splat | null>(null);
   const [loading, setLoading] = useState(true);
@@ -40,7 +26,6 @@ const Splat = () => {
   const [flashOn, setFlashOn] = useState(false);
   const [splatsToday, setSplatsToday] = useState<number | null>(null);
 
-  // Pre-compute rain drops once so positions don't change between renders.
   const rainDrops = useMemo(
     () =>
       Array.from({ length: RAIN_COUNT }, () => ({
@@ -80,10 +65,8 @@ const Splat = () => {
     };
   }, [id]);
 
-  // Phase 1 choreography.
   useEffect(() => {
     if (!splat) return;
-    // 0.8s — haptic
     const vibrateT = window.setTimeout(() => {
       try {
         navigator.vibrate?.([200, 100, 300]);
@@ -91,10 +74,8 @@ const Splat = () => {
         /* noop */
       }
     }, 800);
-    // 1.5s — brown flash
     const flashOnT = window.setTimeout(() => setFlashOn(true), 1500);
     const flashOffT = window.setTimeout(() => setFlashOn(false), 1700);
-    // 2.5s — transition to reveal
     const revealT = window.setTimeout(() => setPhase("reveal"), 2500);
     return () => {
       window.clearTimeout(vibrateT);
@@ -116,7 +97,7 @@ const Splat = () => {
   if (error || !splat) {
     return (
       <div className="mx-auto flex min-h-screen max-w-md flex-col items-center justify-center bg-[#0f0f0f] px-6 text-center text-white">
-        <div className="text-6xl">🚽</div>
+        <div className="text-6xl">🖽</div>
         <h1 className="mt-4 text-2xl font-bold">Nothing here</h1>
         <p className="mt-2 text-sm text-white/60">
           {error ?? "This splat doesn't exist."}
@@ -133,13 +114,15 @@ const Splat = () => {
   const styleMeta = getDeliveryStyleMeta(splat.style);
   const grade = getGrade(splat.units);
   const splatUrl = buildSplatUrl(splat.id);
-  const shareText = buildShareText({
-    recipient: splat.recipient_name,
-    sender: splat.sender_name || "Someone",
-    units: splat.units,
-    grade,
-    splatUrl,
-  });
+  const sender = splat.sender_name || "Someone";
+  
+  const headlines: Record<string, string> = {
+    cannon: `💥 ${sender} just CANNON BLASTED you`,
+    monsoon: `🌧️ ${sender} is raining on your parade`,
+    stealth: `🤫 ${sender} silently dropped on you`,
+    gentle: `🎁 ${sender} left you a... gift`,
+  };
+  const headline = headlines[splat.style] || `${sender} just launched at you`;
 
   const copyLink = async () => {
     try {
@@ -159,7 +142,6 @@ const Splat = () => {
         <ThemeToggle />
       </div>
 
-      {/* Brown flash overlay */}
       <div
         className="pointer-events-none absolute inset-0 z-[5] transition-opacity duration-200"
         style={{
@@ -168,10 +150,8 @@ const Splat = () => {
         }}
       />
 
-      {/* HIT PHASE: rain + name + SPLAT text */}
       {phase === "hit" && (
         <>
-          {/* 💩 rain */}
           <div className="pointer-events-none absolute inset-0 z-[6] overflow-hidden">
             {rainDrops.map((d, i) => (
               <span
@@ -189,14 +169,12 @@ const Splat = () => {
             ))}
           </div>
 
-          {/* Recipient callout */}
           <div className="relative z-[7] mt-24 text-center animate-fade-in">
             <p className="text-4xl font-extrabold tracking-tight text-white">
               Hey {splat.recipient_name}…
             </p>
           </div>
 
-          {/* SPLAT pop at 1.5s */}
           <div
             className="pointer-events-none absolute inset-0 z-[8] flex items-center justify-center opacity-0"
             style={{
@@ -211,13 +189,20 @@ const Splat = () => {
         </>
       )}
 
-      {/* REVEAL PHASE: clean splat card */}
       {phase === "reveal" && (
-        <div className="relative z-10 mt-16 animate-fade-in">
-          <div className="rounded-3xl border border-white/10 bg-[#1a1a1a] p-6 shadow-[0_20px_60px_rgba(0,0,0,0.4)]">
+        <div className="relative z-10 flex flex-col flex-1 animate-fade-in">
+          <div className="mx-auto mb-10">
+            <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-[11px] font-bold text-primary shadow-[0_0_15px_rgba(217,119,6,0.2)]">
+              <span className="flex h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
+              <TrendingUp className="h-3 w-3" />
+              {splatsToday ?? "..."} SPLATS LAUNCHED TODAY
+            </div>
+          </div>
+
+          <div className="rounded-3xl border border-white/10 bg-[#1a1a1a] p-8 shadow-[0_20px_60px_rgba(0,0,0,0.5)]">
             <div className="flex flex-col items-center text-center">
               <div
-                className="relative text-[96px] leading-none"
+                className="relative text-[96px] leading-none mb-4"
                 style={{
                   transform: "rotate(-15deg)",
                   filter:
@@ -227,67 +212,66 @@ const Splat = () => {
               >
                 💩
               </div>
-              <p className="mt-4 text-sm uppercase tracking-[0.2em] text-white/50">
-                {splat.sender_name || "Someone"} just launched at you
-              </p>
-              <div className="mt-3 inline-flex items-center rounded-full bg-amber-500/20 px-4 py-2 text-base font-extrabold text-amber-400">
+              <h1 className="text-2xl font-black tracking-tight leading-tight">
+                {headline}
+              </h1>
+              <div className="mt-4 inline-flex items-center rounded-full bg-amber-500/20 px-4 py-1.5 text-base font-black text-amber-400">
                 {splat.units} units of {grade} 💩
               </div>
               {styleMeta && (
-                <div className="mt-2 text-xs font-semibold text-white/60">
-                  via {styleMeta.label} {styleMeta.emoji}
+                <div className="mt-4 inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-2.5 py-1 text-[10px] font-black uppercase tracking-widest text-white/70">
+                  <span>{styleMeta.emoji}</span>
+                  <span>{styleMeta.label}</span>
                 </div>
               )}
             </div>
           </div>
 
-          {/* CTA block */}
-          <div className="mt-6">
+          <div className="mt-8">
             <Link to="/onboarding">
               <Button
                 variant="hero"
                 size="xl"
-                className="w-full"
+                className="w-full h-16 text-lg font-black"
                 data-testid="retaliate-cta"
               >
-                Retaliate on Pooped 💩 →
+                Retaliate 💩 →
               </Button>
             </Link>
-            <p className="mt-3 text-center text-xs text-white/60">
-              Free · Takes 30 seconds to set up · Your reservoir starts filling immediately
+            <p className="mt-4 text-center text-sm font-bold text-white/80">
+              Join {sender} on Pooped and hit back
             </p>
 
-            <div className="mt-5 flex items-center justify-center gap-3 text-xs text-white/50">
-              <span>or share this hit</span>
-              <a
-                href={buildWhatsAppLink(shareText)}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="rounded-full bg-white/5 p-2 transition hover:bg-white/10"
-                aria-label="Share on WhatsApp"
-                data-testid="splat-share-whatsapp"
-              >
-                <MessageCircle className="h-4 w-4 text-[hsl(142,70%,50%)]" />
-              </a>
-              <button
-                onClick={copyLink}
-                className="rounded-full bg-white/5 p-2 transition hover:bg-white/10"
-                aria-label="Copy link"
-                data-testid="splat-copy-link"
-              >
-                <Copy className="h-4 w-4 text-white/80" />
-              </button>
+            <div className="mt-10 flex flex-col items-center gap-4">
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/30">Share this hit</p>
+              <div className="flex items-center gap-4">
+                <a
+                  href={buildWhatsAppLink(`Check out this splat: ${splatUrl}`)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex h-12 w-12 items-center justify-center rounded-full bg-[#25D366] text-white shadow-lg transition-transform hover:scale-110 active:scale-95"
+                  aria-label="Share on WhatsApp"
+                  data-testid="splat-share-whatsapp"
+                >
+                  <svg className="h-6 w-6 fill-current" viewBox="0 0 24 24">
+                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.353-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L0 24l6.335-1.662c1.72.94 3.659 1.437 5.634 1.437h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
+                  </svg>
+                </a>
+                <button
+                  onClick={copyLink}
+                  className="flex h-12 w-12 items-center justify-center rounded-full bg-white/10 text-white transition-transform hover:scale-110 active:scale-95"
+                  aria-label="Copy link"
+                  data-testid="splat-copy-link"
+                >
+                  <Copy className="h-6 w-6" />
+                </button>
+              </div>
             </div>
           </div>
         </div>
       )}
-
-      {/* Live counter — always visible at the bottom */}
-      <div className="mt-auto pt-10 text-center text-[11px] text-white/40">
-        💩 {splatsToday ?? "…"} splats launched today
-      </div>
     </div>
   );
 };
 
-export default Splat;
+export default SplatPage;
