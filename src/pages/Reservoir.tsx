@@ -1,6 +1,6 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Rocket } from "lucide-react";
+import { Rocket, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AppShell } from "@/components/AppShell";
 import { ToiletBowl } from "@/components/ToiletBowl";
@@ -52,7 +52,7 @@ const Reservoir = () => {
       }, 300);
       return () => clearTimeout(timer);
     }
-  }, [bonusToAnimate, state.units]);
+  }, [bonusToAnimate, state.units, displayUnits]);
 
   const refresh = () => {
     const newState = getReservoirState();
@@ -93,8 +93,8 @@ const Reservoir = () => {
           </div>
         </div>
 
-        <div className="relative mt-6 w-full">
-          <div className="h-3 w-full overflow-hidden rounded-full bg-muted">
+        <div className="relative mt-6 w-full px-2">
+          <div className="h-3 w-full overflow-hidden rounded-full bg-muted/40">
             <div
               className="h-full bg-primary transition-all duration-1000 ease-out"
               style={{ width: `${Math.min(100, ratio * 100)}%` }}
@@ -115,21 +115,32 @@ const Reservoir = () => {
         </div>
       </section>
 
-      <div className="mt-8">
-        <Button
-          variant={canLaunch ? "hero" : "soft"}
-          size="xl"
-          className={`w-full gap-2 h-14 font-black text-lg ${!canLaunch ? "opacity-60" : ""}`}
-          onClick={() => canLaunch && setSendOpen(true)}
-          disabled={!canLaunch}
-          data-testid="launch-button"
-        >
-          <Rocket className="h-5 w-5" />
-          {canLaunch ? "Launch 💩" : "Keep logging to unlock"}
-        </Button>
+      <div className="mt-12 space-y-4">
+        {canLaunch ? (
+          <Button
+            variant="hero"
+            size="xl"
+            className="w-full gap-2 h-16 text-lg font-black"
+            onClick={() => setSendOpen(true)}
+            data-testid="launch-button"
+          >
+            <Rocket className="h-6 w-6" />
+            Launch 💩
+          </Button>
+        ) : (
+          <Button
+            variant="soft"
+            size="xl"
+            className="w-full gap-3 h-16 text-lg font-bold bg-white/5 border border-white/5 text-white/40"
+            onClick={() => navigate("/log")}
+          >
+            <Plus className="h-5 w-5" />
+            Keep logging to unlock
+          </Button>
+        )}
 
         {canLaunch && (
-          <p className="mt-3 text-center text-sm font-bold text-muted-foreground">
+          <p className="mt-3 text-center text-sm font-bold text-muted-foreground animate-in fade-in slide-in-from-top-2">
             Your friends won't know what hit them 😈
           </p>
         )}

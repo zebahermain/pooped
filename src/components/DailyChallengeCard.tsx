@@ -17,6 +17,7 @@ export const DailyChallengeCard = ({ refreshToken = 0 }: Props) => {
   const challenge = useMemo(() => getChallengeForDate(), []);
   const [completion, setCompletion] = useState(() => getCompletionForDate());
   const [remoteAcknowledged, setRemoteAcknowledged] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     setCompletion(getCompletionForDate());
@@ -26,7 +27,10 @@ export const DailyChallengeCard = ({ refreshToken = 0 }: Props) => {
         supabase.from("profiles").select("reservoir_notified").eq("id", user.id).single()
           .then(({ data }) => {
             if (data) setRemoteAcknowledged(data.reservoir_notified);
+            setLoading(false);
           });
+      } else {
+        setLoading(false);
       }
     });
   }, [refreshToken]);
@@ -44,6 +48,7 @@ export const DailyChallengeCard = ({ refreshToken = 0 }: Props) => {
     }
   };
 
+  if (loading) return null;
   if (done && isHandled) return null;
 
   return (
