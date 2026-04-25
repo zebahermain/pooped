@@ -82,8 +82,8 @@ export const acknowledgeCompletion = async (dateStr: string) => {
   }
 };
 
-export const isCompletedToday = ()
-  => getCompletionForDate(new Date()) !== null;
+export const isCompletedToday = () =>
+  getCompletionForDate(new Date()) !== null;
 
 export const evaluateAndMarkCompletion = (
   candidateLog?: PoopLog
