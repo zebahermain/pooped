@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useState, useRef } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Rocket } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AppShell } from "@/components/AppShell";
@@ -17,9 +17,15 @@ import { getProfile } from "@/lib/storage";
 
 const Reservoir = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [state, setState] = useState(getReservoirState());
   const [sendOpen, setSendOpen] = useState(false);
   const [showFirstTip, setShowFirstTip] = useState(false);
+  
+  const bonusToAnimate = location.state?.animateBonus || 0;
+  const [displayUnits, setDisplayUnits] = useState(
+    bonusToAnimate ? Math.max(0, state.units - bonusToAnimate) : state.units
+  );
 
   useEffect(() => {
     if (!getProfile()) {
@@ -27,12 +33,10 @@ const Reservoir = () => {
       return;
     }
     document.title = "Your Reservoir 💩 — Pooped";
-    setState(getReservoirState());
     acknowledgeLaunchDot().catch(() => {});
 
     if (!hasSeenLaunchTip()) {
       setShowFirstTip(true);
-      // Auto-dismiss after 6s — and never show again.
       const t = window.setTimeout(() => {
         setShowFirstTip(false);
         markLaunchTipSeen();
@@ -41,8 +45,22 @@ const Reservoir = () => {
     }
   }, [navigate]);
 
-  const refresh = () => setState(getReservoirState());
-  const ratio = state.max > 0 ? state.units / state.max : 0;
+  useEffect(() => {
+    if (bonusToAnimate > 0 && displayUnits < state.units) {
+      const timer = setTimeout(() => {
+        setDisplayUnits(state.units);
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+  }, [bonusToAnimate, state.units]);
+
+  const refresh = () => {
+    const newState = getReservoirState();
+    setState(newState);
+    setDisplayUnits(newState.units);
+  };
+
+  const ratio = state.max > 0 ? displayUnits / state.max : 0;
   const grade = getGrade(state.units);
   const canLaunch = state.units >= LAUNCH_THRESHOLD;
 
@@ -54,8 +72,8 @@ const Reservoir = () => {
   return (
     <AppShell>
       <header className="mb-2 pr-14">
-        <p className="text-sm text-muted-foreground">Your Reservoir</p>
-        <h1 className="text-2xl font-bold">Fill it. Launch it. 💩</h1>
+        <p className="text-sm text-muted-foreground font-medium">Your Reservoir</p>
+        <h1 className="text-2xl font-black text-foreground">Fill it. Launch it. 💩</h1>
       </header>
 
       <section className="mt-4 flex flex-col items-center">
@@ -64,7 +82,7 @@ const Reservoir = () => {
         <div className="mt-4 text-center">
           <div className="text-4xl font-extrabold" data-testid="reservoir-units">
             <span className="bg-gradient-to-br from-primary to-primary-glow bg-clip-text text-transparent">
-              You have {state.units}
+              You have {displayUnits}
             </span>
             <span className="ml-2 text-2xl text-muted-foreground">
               / {state.max} units
@@ -78,7 +96,7 @@ const Reservoir = () => {
         <div className="relative mt-6 w-full">
           <div className="h-3 w-full overflow-hidden rounded-full bg-muted">
             <div
-              className="h-full gradient-warm transition-all duration-700"
+              className="h-full bg-primary transition-all duration-1000 ease-out"
               style={{ width: `${Math.min(100, ratio * 100)}%` }}
             />
           </div>
@@ -101,7 +119,7 @@ const Reservoir = () => {
         <Button
           variant={canLaunch ? "hero" : "soft"}
           size="xl"
-          className={`w-full gap-2 ${!canLaunch ? "opacity-60" : ""}`}
+          className={`w-full gap-2 h-14 font-black text-lg ${!canLaunch ? "opacity-60" : ""}`}
           onClick={() => canLaunch && setSendOpen(true)}
           disabled={!canLaunch}
           data-testid="launch-button"
@@ -111,7 +129,7 @@ const Reservoir = () => {
         </Button>
 
         {canLaunch && (
-          <p className="mt-3 text-center text-sm font-semibold text-muted-foreground">
+          <p className="mt-3 text-center text-sm font-bold text-muted-foreground">
             Your friends won't know what hit them 😈
           </p>
         )}

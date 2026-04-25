@@ -1,16 +1,5 @@
 import { getLogs, getStreakData, getTodaysLogs, type PoopLog } from "@/lib/storage";
-
-/**
- * Daily Gut Challenge — Feature 1.
- *
- * Entirely client-side: the 5 challenge archetypes are deterministically
- * rotated by day-of-epoch so every user sees the same challenge on the
- * same calendar date without needing a shared Supabase table (and thus
- * avoids clashing with Lovable's migrations).
- *
- * Consecutive days never share a type because `POOL.length === 5` and
- * we rotate by `dayIndex % 5`, which always differs from `(dayIndex-1) % 5`.
- */
+import { supabase } from "@/integrations/supabase/client";
 
 export type ChallengeType =
   | "timing"
@@ -26,6 +15,14 @@ export interface ChallengeDef {
   bonusUnits: number;
 }
 
+export interface CompletionRecord {
+  date: string;
+  type: ChallengeType;
+  bonusUnits: number;
+  completedAt: number;
+  acknowledged?: boolean;
+}
+
 const POOL: ChallengeDef[] = [
   { type: "timing", text: "Log before 9am today ⏰", targetValue: 9, bonusUnits: 15 },
   { type: "score", text: "Hit a Gut Score above 75 today 🎯", targetValue: 75, bonusUnits: 20 },
@@ -36,22 +33,12 @@ const POOL: ChallengeDef[] = [
 
 const toDateStr = (d: Date) => d.toISOString().slice(0, 10);
 
-/** Days since Unix epoch — used as the rotation index. */
 const dayIndex = (d: Date) =>
   Math.floor(d.getTime() / 86_400_000);
 
 export const getChallengeForDate = (date: Date = new Date()): ChallengeDef => {
   return POOL[dayIndex(date) % POOL.length];
 };
-
-// ---------------- Completion state ----------------
-
-interface CompletionRecord {
-  date: string;
-  type: ChallengeType;
-  bonusUnits: number;
-  completedAt: number;
-}
 
 const KEY = "pooped_challenge_completions";
 
@@ -67,9 +54,7 @@ const readAll = (): Record<string, CompletionRecord> => {
 const writeAll = (data: Record<string, CompletionRecord>) => {
   try {
     localStorage.setItem(KEY, JSON.stringify(data));
-  } catch {
-    // ignore quota
-  }
+  } catch {}
 };
 
 export const getCompletionForDate = (
@@ -79,15 +64,29 @@ export const getCompletionForDate = (
   return readAll()[ds] ?? null;
 };
 
-export const isCompletedToday = () =>
-  getCompletionForDate(new Date()) !== null;
+export const acknowledgeCompletion = async (dateStr: string) => {
+  const all = readAll();
+  if (all[dateStr]) {
+    all[dateStr].acknowledged = true;
+    writeAll(all);
+  }
 
-/**
- * Evaluate today's challenge against today's logs (with a candidate log
- * we're about to save optionally merged in). If the challenge is now
- * satisfied and wasn't already completed today, persist the completion
- * and return the record (caller can then credit reservoir + confetti).
- */
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      await supabase
+        .from("profiles")
+        .update({ reservoir_notified: true })
+        .eq("id", user.id);
+    }
+  } catch (e) {
+    console.error("Failed to sync acknowledgement:", e);
+  }
+};
+
+export const isCompletedToday = ()
+  => getCompletionForDate(new Date()) !== null;
+
 export const evaluateAndMarkCompletion = (
   candidateLog?: PoopLog
 ): CompletionRecord | null => {
@@ -130,25 +129,29 @@ export const evaluateAndMarkCompletion = (
     type: challenge.type,
     bonusUnits: challenge.bonusUnits,
     completedAt: now.getTime(),
+    acknowledged: false
   };
   const all = readAll();
   all[record.date] = record;
   writeAll(all);
+
+  supabase.auth.getUser().then(({ data: { user } }) => {
+    if (user) {
+      supabase.from("profiles").update({ reservoir_notified: false }).eq("id", user.id).catch(console.error);
+    }
+  });
+
   return record;
 };
 
-/** Add bonus units directly to the local reservoir (no log attached). */
 export const creditReservoirBonus = (units: number) => {
   const LOCAL_KEY = "pooped_reservoir";
   try {
     const raw = localStorage.getItem(LOCAL_KEY);
-    const state = raw ? JSON.parse(raw) : { units: 0, max: 500, notified: false };
+    const state = raw ? JSON.parse(raw) : { units: 0, max: 500 };
     const next = { ...state, units: Math.min(state.max, state.units + units) };
     localStorage.setItem(LOCAL_KEY, JSON.stringify(next));
-  } catch {
-    // ignore
-  }
+  } catch {}
 };
 
-// Re-export in case callers want the log type without a separate import.
 export type { PoopLog };

@@ -19,6 +19,7 @@ import {
 } from "@/lib/splats";
 import { getRandomShareText } from "@/lib/shareMessages";
 import { getProfile } from "@/lib/storage";
+import { getCompletionForDate, acknowledgeCompletion } from "@/lib/challenges";
 
 interface Props {
   open: boolean;
@@ -115,6 +116,11 @@ export const SendSheet = ({ open, onOpenChange, reservoirUnits, onSent }: Props)
       grade,
       splatUrl: shortUrl,
     });
+
+    const completion = getCompletionForDate();
+    if (completion && !completion.acknowledged) {
+      await acknowledgeCompletion(completion.date);
+    }
 
     if (shareMethod === "copy") {
       await navigator.clipboard?.writeText(fullUrl).catch(() => {});
@@ -235,8 +241,7 @@ export const SendSheet = ({ open, onOpenChange, reservoirUnits, onSent }: Props)
 
           {step === 2 && (
             <div className="animate-in fade-in slide-in-from-bottom-4 duration-300">
-              <div className="flex items-center gap-2">
-                <button onClick={() => setStep(1)} className="rounded-full bg-muted/50 p-1.5 text-foreground">
+              <div className="flex items-center gap-2">                <button onClick={() => setStep(1)} className="rounded-full bg-muted/50 p-1.5 text-foreground">
                   <ArrowLeft className="h-4 w-4" />
                 </button>
                 <h2 className="text-2xl font-black tracking-tight text-foreground">Choose your weapon</h2>
@@ -255,8 +260,7 @@ export const SendSheet = ({ open, onOpenChange, reservoirUnits, onSent }: Props)
                   >
                     <span className="text-4xl leading-none">{s.emoji}</span>
                     <div className="mt-2">
-                      <span className="block text-sm font-black uppercase tracking-tight text-foreground">{s.label}</span>
-                      <span className="text-[10px] font-bold uppercase tracking-widest text-primary">
+                      <span className="block text-sm font-black uppercase tracking-tight text-foreground">{s.label}</span>                      <span className="text-[10px] font-bold uppercase tracking-widest text-primary">
                         {s.description}
                       </span>
                     </div>
