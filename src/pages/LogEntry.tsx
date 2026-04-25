@@ -139,7 +139,7 @@ const LogEntry = () => {
 
   return (
     <AppShell>
-      <div className="pb-32">
+      <div className="pb-32 text-foreground">
         <header className="mb-6 flex items-center gap-3 pr-12">
           <button onClick={handleBack} className="rounded-full bg-card p-2 shadow-card border border-border">
             <ArrowLeft className="h-5 w-5" />
@@ -229,7 +229,7 @@ const LogEntry = () => {
               <Button
                 variant="hero"
                 size="xl"
-                className="w-full"
+                className="w-full h-16 font-black"
                 onClick={() => {
                   setColorContextExplained(colorContextChips.length > 0);
                   setShowContextCheck(false);
@@ -332,3 +332,5 @@ const LogEntry = () => {
     </AppShell>
   );
 };
+
+export default LogEntry;
