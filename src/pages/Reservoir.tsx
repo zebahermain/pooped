@@ -129,12 +129,12 @@ const Reservoir = () => {
           </Button>
         ) : (
           <Button
-            variant="soft"
+            variant="outline"
             size="xl"
-            className="w-full gap-3 h-16 text-lg font-bold bg-white/5 border border-white/5 text-white/40"
+            className="w-full gap-3 h-16 text-lg font-bold border-white/20 text-white hover:bg-white/5 active:scale-95 transition-all"
             onClick={() => navigate("/log")}
           >
-            <Plus className="h-5 w-5" />
+            <Plus className="h-5 w-5 text-primary" />
             Keep logging to unlock
           </Button>
         )}
