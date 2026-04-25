@@ -7,16 +7,23 @@ interface Props {
   onDeny: () => void;
 }
 
-/**
- * Full-screen "confirmation moment" shown before the Gut Score calculation.
- * Nudges users to log honestly without being preachy.
- */
+const HEADLINES = [
+  "Real talk — did you actually go?",
+  "Be honest. Your gut score depends on it 👀",
+  "No judgment... but did that actually happen? 🖽",
+  "Your future self wants accurate data. Did you go?"
+];
+
 export const HonestyCheck = ({ open, onConfirm, onDeny }: Props) => {
   const [confetti, setConfetti] = useState<number[]>([]);
+  const [headline, setHeadline] = useState(HEADLINES[0]);
   const confirmedRef = useRef(false);
 
   useEffect(() => {
-    if (!open) {
+    if (open) {
+      const idx = Math.floor(Math.random() * HEADLINES.length);
+      setHeadline(HEADLINES[idx]);
+    } else {
       confirmedRef.current = false;
       setConfetti([]);
     }
@@ -27,22 +34,17 @@ export const HonestyCheck = ({ open, onConfirm, onDeny }: Props) => {
   const handleYes = () => {
     if (confirmedRef.current) return;
     confirmedRef.current = true;
-    // Haptic feedback (mobile only, best effort)
     try {
       if (typeof navigator !== "undefined" && "vibrate" in navigator) {
         navigator.vibrate?.(18);
       }
-    } catch {
-      // ignore
-    }
-    // Confetti burst
+    } catch {}
     setConfetti(Array.from({ length: 14 }, (_, i) => i));
     window.setTimeout(onConfirm, 650);
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center gap-8 bg-background px-6 animate-fade-in">
-      {/* Confetti layer */}
+    <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center gap-10 bg-[#0A0A0A] px-6 animate-in fade-in duration-300">
       {confetti.length > 0 && (
         <div className="pointer-events-none absolute inset-0 overflow-hidden">
           {confetti.map((i) => {
@@ -71,25 +73,30 @@ export const HonestyCheck = ({ open, onConfirm, onDeny }: Props) => {
       )}
 
       <div className="flex flex-col items-center text-center">
-        <div className="text-7xl animate-scale-in">🚽</div>
-        <h2 className="mt-6 text-2xl font-bold">Real talk — did you actually go?</h2>
-        <p className="mt-2 max-w-xs text-sm text-muted-foreground">
+        <div className="text-7xl animate-bounce">🖽</div>
+        <h2 className="mt-8 text-[24px] font-black tracking-tight text-white leading-tight max-w-sm">
+          {headline}
+        </h2>
+        <p className="mt-3 max-w-xs text-sm font-medium text-muted-foreground/80 italic">
           Honest logs make your insights worth something.
         </p>
       </div>
 
-      <div className="flex w-full max-w-xs flex-col gap-3">
-        <Button variant="hero" size="xl" className="w-full" onClick={handleYes}>
+      <div className="flex w-full max-w-xs flex-col gap-4">
+        <Button 
+          variant="hero" 
+          size="xl" 
+          className="w-full h-16 text-lg font-black" 
+          onClick={handleYes}
+        >
           Yes, that was real 💯
         </Button>
-        <Button
-          variant="outline"
-          size="lg"
-          className="w-full rounded-2xl"
+        <button
           onClick={onDeny}
+          className="w-full h-14 rounded-2xl border border-white/10 bg-white/5 text-sm font-bold text-white transition-all active:scale-95"
         >
           Actually... no 😅
-        </Button>
+        </button>
       </div>
     </div>
   );

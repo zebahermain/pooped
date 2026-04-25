@@ -1,10 +1,10 @@
 import { getLogs, type PoopLog } from "./storage";
 
 const SUSPICIOUS_NUDGE_KEY = "pooped.suspiciousNudgeSeen";
+const LAST_CHECK_KEY = "pooped.lastHonestyCheck";
 
 const toDateStr = (ts: number) => new Date(ts).toISOString().slice(0, 10);
 
-// Group logs by local date string
 const countsByDate = (logs: PoopLog[]): Record<string, number> => {
   const map: Record<string, number> = {};
   for (const l of logs) {
@@ -14,16 +14,34 @@ const countsByDate = (logs: PoopLog[]): Record<string, number> => {
   return map;
 };
 
-/**
- * Honest Logger badge: awarded when the user has logged on 7 consecutive days
- * (up to and including today or yesterday) with exactly 1–3 logs per day.
- */
+export const shouldShowHonestyCheck = (): boolean => {
+  const logs = getLogs();
+  const today = toDateStr(Date.now());
+  const todaysLogs = logs.filter(l => toDateStr(l.timestamp) === today);
+  const logCountToday = todaysLogs.length;
+
+  if (logCountToday === 0) return false;
+
+  const lastCheck = localStorage.getItem(LAST_CHECK_KEY);
+  if (lastCheck === "pending") return false;
+
+  if (logCountToday >= 3) return true;
+
+  return Math.random() < 0.12;
+};
+
+export const markHonestyCheckStarted = () => {
+  localStorage.setItem(LAST_CHECK_KEY, "pending");
+};
+
+export const markHonestyCheckFinished = () => {
+  localStorage.removeItem(LAST_CHECK_KEY);
+};
+
 export const hasHonestLoggerBadge = (): boolean => {
   const logs = getLogs();
   if (logs.length < 7) return false;
   const counts = countsByDate(logs);
-
-  // Find the most recent day with any log; streak must end today or yesterday.
   const today = new Date();
   const yesterday = new Date();
   yesterday.setDate(today.getDate() - 1);
@@ -45,16 +63,10 @@ export const hasHonestLoggerBadge = (): boolean => {
   return true;
 };
 
-/**
- * Returns true if the user has logged 4+ times in a single day on 3+
- * consecutive recent days. Used to trigger a one-time nudge card.
- */
 export const hasSuspiciousPattern = (): boolean => {
   const logs = getLogs();
   if (logs.length < 12) return false;
   const counts = countsByDate(logs);
-
-  // Walk backwards from today looking for 3 consecutive days with 4+ logs.
   const cursor = new Date();
   let consecutive = 0;
   for (let i = 0; i < 14; i++) {

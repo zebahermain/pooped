@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Check, AlertCircle } from "lucide-react";
+import { ArrowLeft, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { AppShell } from "@/components/AppShell";
 import { HonestyCheck } from "@/components/HonestyCheck";
+import { toast } from "@/hooks/use-toast";
 import {
   BRISTOL_META,
   COLOR_META,
@@ -18,9 +19,10 @@ import {
   type StoolColor,
 } from "@/lib/storage";
 import { applyLogToReservoir } from "@/lib/reservoir";
-import { COLOR_CONTEXT, isFlaggedColor } from "@/lib/colorContext";
+import { isFlaggedColor, COLOR_CONTEXT } from "@/lib/colorContext";
 import { getSmartPrompt } from "@/lib/smartPrompt";
 import { creditReservoirBonus, evaluateAndMarkCompletion } from "@/lib/challenges";
+import { shouldShowHonestyCheck, markHonestyCheckStarted, markHonestyCheckFinished } from "@/lib/honesty";
 
 const colorOrder: StoolColor[] = [
   "medium_brown",
@@ -77,6 +79,7 @@ const LogEntry = () => {
       notePrompt: notes.trim() ? notePrompt : undefined,
     };
     saveLog(log);
+    markHonestyCheckFinished();
     try {
       await applyLogToReservoir(log);
       const completion = evaluateAndMarkCompletion();
@@ -92,7 +95,19 @@ const LogEntry = () => {
 
   const handleCalculate = () => {
     if (!bristol || !color) return;
-    setHonestyOpen(true);
+    if (shouldShowHonestyCheck()) {
+      markHonestyCheckStarted();
+      setHonestyOpen(true);
+    } else {
+      submit();
+    }
+  };
+
+  const handleHonestyDeny = () => {
+    setHonestyOpen(false);
+    markHonestyCheckFinished();
+    toast({ title: "Log removed 👍", description: "no worries" });
+    navigate("/");
   };
 
   const handleBack = () => {
@@ -141,7 +156,7 @@ const LogEntry = () => {
 
         {step === 1 && (
           <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
-            <h2 className="text-2xl font-bold">Pick your stool type</h2>
+            <h2 className="text-2xl font-bold text-foreground">Pick your stool type</h2>
             <p className="mt-1 text-sm text-muted-foreground">Tap the one that looks closest.</p>
             <div className="mt-6 flex flex-col gap-2.5">
               {Object.entries(BRISTOL_META).map(([typeStr, b]) => {
@@ -155,7 +170,7 @@ const LogEntry = () => {
                     <span className="text-3xl">{b.emoji}</span>
                     <div className="flex-1">
                       <div className="flex items-center gap-2">
-                        <span className="font-semibold text-foreground">Type {type}</span>
+                        <span className="font-semibold text-foreground text-foreground">Type {type}</span>
                         {b.ideal && (
                           <span className="rounded-full bg-success/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-success">Ideal</span>
                         )}
@@ -171,7 +186,7 @@ const LogEntry = () => {
 
         {step === 2 && !showContextCheck && (
           <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
-            <h2 className="text-2xl font-bold">What color was it?</h2>
+            <h2 className="text-2xl font-bold text-foreground">What color was it?</h2>
             <p className="mt-1 text-sm text-muted-foreground">Brown is healthy.</p>
             <div className="mt-6 grid grid-cols-2 gap-3">
               {colorOrder.map((c) => {
@@ -183,7 +198,7 @@ const LogEntry = () => {
                     className="flex flex-col items-center gap-3 rounded-2xl border border-border/40 bg-card p-5 transition-all active:scale-[0.98] hover:bg-muted/30"
                   >
                     <div className="h-14 w-14 rounded-full border-2 border-border shadow-inner" style={{ backgroundColor: meta.hex }} />
-                    <span className="text-center text-xs font-bold">{meta.label}</span>
+                    <span className="text-center text-xs font-bold text-foreground">{meta.label}</span>
                   </button>
                 );
               })}
@@ -193,7 +208,7 @@ const LogEntry = () => {
 
         {step === 2 && showContextCheck && flaggedMeta && (
           <div className="animate-in fade-in duration-300">
-            <h2 className="text-2xl font-bold">Quick check 🧐</h2>
+            <h2 className="text-2xl font-bold text-foreground">Quick check 🧐</h2>
             <p className="mt-1 text-sm text-muted-foreground">{flaggedMeta.subtitle}</p>
             <div className="mt-6 flex flex-wrap gap-2">
               {flaggedMeta.chips.map((chip) => {
@@ -240,7 +255,7 @@ const LogEntry = () => {
 
         {step === 3 && (
           <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
-            <h2 className="text-2xl font-bold">The details</h2>
+            <h2 className="text-2xl font-bold text-foreground">The details</h2>
             <p className="mt-1 text-sm text-muted-foreground">How was your day? (Optional)</p>
             
             <div className="mt-6 space-y-6">
@@ -268,7 +283,7 @@ const LogEntry = () => {
               ))}
 
               <div className="pt-4 border-t border-border/40">
-                <h3 className="text-sm font-bold flex items-center gap-2">
+                <h3 className="text-sm font-bold flex items-center gap-2 text-foreground">
                    Any blood? <AlertCircle className="h-4 w-4 text-destructive" />
                 </h3>
                 <div className="mt-3 flex flex-wrap gap-2">
@@ -289,12 +304,12 @@ const LogEntry = () => {
               </div>
 
               <div className="space-y-3">
-                <h3 className="text-sm font-bold">Notes</h3>
+                <h3 className="text-sm font-bold text-foreground text-foreground">Notes</h3>
                 <Textarea
                   value={notes}
                   onChange={(e) => setNotes(e.target.value.slice(0, NOTES_MAX))}
                   placeholder={notePrompt}
-                  className="min-h-[100px] rounded-2xl border-border bg-card text-sm"
+                  className="min-h-[100px] rounded-2xl border-border bg-card text-sm text-foreground"
                   maxLength={NOTES_MAX}
                 />
               </div>
@@ -306,16 +321,14 @@ const LogEntry = () => {
       <div className="fixed inset-x-0 bottom-0 z-50 p-4 pb-8 bg-gradient-to-t from-background via-background/90 to-transparent">
         <div className="mx-auto w-full max-w-md">
           {step === 3 && (
-            <Button variant="hero" size="xl" className="w-full" onClick={handleCalculate}>
+            <Button variant="hero" size="xl" className="w-full h-14 font-black" onClick={handleCalculate}>
               Calculate my score →
             </Button>
           )}
         </div>
       </div>
 
-      <HonestyCheck open={honestyOpen} onConfirm={submit} onDeny={() => setHonestyOpen(false)} />
+      <HonestyCheck open={honestyOpen} onConfirm={submit} onDeny={handleHonestyDeny} />
     </AppShell>
   );
 };
-
-export default LogEntry;
