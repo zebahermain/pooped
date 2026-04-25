@@ -77,15 +77,12 @@ export const createSplat = async (input: CreateSplatInput): Promise<Splat> => {
 };
 
 export const fetchSplat = async (id: string): Promise<Splat | null> => {
-  let query = supabase.from("splats").select("*");
-  
   if (id.length === 8) {
-    query = query.like("id", `${id}%`);
-  } else {
-    query = query.eq("id", id);
+     const { data } = await supabase.from("splats").select("*").limit(200).order('created_at', { ascending: false });
+     return data?.find(s => s.id.startsWith(id)) || null;
   }
-
-  const { data, error } = await query.maybeSingle();
+  
+  const { data, error } = await supabase.from("splats").select("*").eq("id", id).maybeSingle();
   if (error) throw error;
   return (data as Splat) ?? null;
 };

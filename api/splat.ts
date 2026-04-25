@@ -13,19 +13,30 @@ export default async function handler(req: any, res: any) {
   }
 
   let query = supabase.from('splats').select('*');
+  
   if (id.length === 8) {
-    query = query.like('id', `${id}%`);
+    query = query.filter('id', 'like', `${id}%`);
   } else {
     query = query.eq('id', id);
   }
 
-  const { data: splat, error } = await query.single();
+  const { data: splat, error } = await query.maybeSingle();
 
   if (error || !splat) {
-    console.error('Splat fetch error:', error);
+    if (id.length === 8) {
+       const { data: allSplats } = await supabase.from('splats').select('*').limit(200).order('created_at', { ascending: false });
+       const found = allSplats?.find(s => s.id.startsWith(id));
+       if (found) {
+         return serveHtml(res, found);
+       }
+    }
     return res.redirect(`https://pooped.vercel.app/?redirect=/splat/${id}`);
   }
 
+  return serveHtml(res, splat);
+}
+
+function serveHtml(res: any, splat: any) {
   const sender = splat.sender_name || 'Someone';
   const title = `${sender} just hit you 💩`;
   const description = 'Open to see the damage and retaliate';
