@@ -4,22 +4,22 @@ const POOP = "💩";
 const EYES = "👀";
 
 export const SHARE_MESSAGE_TEMPLATES = [
-  (n: string, s: string, u: number, g: ReservoirGrade, l: string) => 
-    `${n}, you've been pooped on ${POOP} ${s} launched ${u} units of ${g}-grade damage. Can you beat that? → ${l}`,
-  (n: string, s: string, u: number, g: ReservoirGrade, l: string) => 
-    `INCOMING ${n} ${POOP} ${s} just declared war with ${u} units of ${g}-grade damage. The damage is done. → ${l}`,
-  (n: string, s: string, u: number, g: ReservoirGrade, l: string) => 
-    `This is not a drill, ${n}. ${s} hit you with ${u} units of ${g}-grade power. Your move. → ${l}`,
-  (n: string, s: string, u: number, g: ReservoirGrade, l: string) => 
-    `${n} has been chosen. ${s} selected you personally for ${u} units of ${g}-grade destruction. → ${l}`,
-  (n: string, s: string, u: number, g: ReservoirGrade, l: string) => 
-    `Uh oh ${n} ${EYES} ${s} is ${u} units of ${g}-grade damage deep and coming for you. Think you can keep up? → ${l}`,
-  (n: string, s: string, u: number, g: ReservoirGrade, l: string) => 
-    `${s} vs ${n}. Current score: ${u} units of ${g}-grade damage to zero. Don't let them win. → ${l}`,
-  (n: string, s: string, u: number, g: ReservoirGrade, l: string) => 
-    `Respectfully ${n}... ${s} just pooped ${u} units of ${g}-grade damage and put your name on it. → ${l}`,
-  (n: string, s: string, u: number, g: ReservoirGrade, l: string) => 
-    `You have been poop-challenged, ${n}. ${s} is at ${u} units of ${g}-grade damage. Accept or stay scared. → ${l}`
+  (n: string, s: string, u: number, _g: ReservoirGrade, l: string) => 
+    `${n}, you just got pooped on! ${POOP} ${s} launched ${u} poop units at you. See the splat and hit back on Pooped: ${l}`,
+  (n: string, s: string, u: number, _g: ReservoirGrade, l: string) => 
+    `INCOMING! ${POOP} ${s} just declared war with ${u} poop units, ${n}. Join the fun on Pooped and retaliate: ${l}`,
+  (n: string, s: string, u: number, _g: ReservoirGrade, l: string) => 
+    `Not a drill, ${n}! ${POOP} ${s} hit you with ${u} poop units. Start your gut streak on Pooped and launch one back: ${l}`,
+  (n: string, s: string, u: number, _g: ReservoirGrade, l: string) => 
+    `You've been chosen! ${POOP} ${s} sent ${u} poop units your way. See the damage and join the game on Pooped: ${l}`,
+  (n: string, s: string, u: number, _g: ReservoirGrade, l: string) => 
+    `Uh oh ${n} ${EYES} ${s} just dropped ${u} poop units on you. Think you can keep up? Launch back on Pooped: ${l}`,
+  (n: string, s: string, u: number, _g: ReservoirGrade, l: string) => 
+    `${s} vs ${n}! ${POOP} The score is ${u} poop units to 0. Don't let them win — get on Pooped and retaliate now: ${l}`,
+  (n: string, s: string, u: number, _g: ReservoirGrade, l: string) => 
+    `Surprise, ${n}! ${POOP} ${s} just pooped ${u} poop units and put your name on it. See the splat and hit back on Pooped: ${l}`,
+  (n: string, s: string, u: number, _g: ReservoirGrade, l: string) => 
+    `You've been poop-challenged, ${n}! ${POOP} ${s} is at ${u} poop units. Join the fun and launch some back: ${l}`
 ];
 
 export const getRandomShareText = (params: {
