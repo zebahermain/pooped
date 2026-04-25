@@ -24,31 +24,31 @@ export const DailyChallengeCard = ({ refreshToken = 0 }: Props) => {
   return (
     <button
       onClick={() => navigate("/reservoir")}
-      className="mt-6 flex w-full items-center gap-4 rounded-3xl border border-[#78350F] bg-[#1C140E] p-5 text-left shadow-2xl transition-all active:scale-95"
+      className="mt-6 flex w-full items-center gap-4 rounded-2xl border border-white/10 bg-[#1A1A1A] p-5 text-left transition-all active:scale-[0.98]"
       data-testid="daily-challenge-card"
     >
       <div className="text-3xl shrink-0">💩</div>
       
       <div className="flex-1 min-w-0">
-        <p className="text-[15px] font-black tracking-tight text-white uppercase">
+        <p className="text-[15px] font-bold tracking-tight text-white">
           {done 
             ? `+${completion!.bonusUnits} units added to your reservoir`
             : challenge.text}
         </p>
         
-        <div className="mt-2.5 h-1.5 w-full overflow-hidden rounded-full bg-[#1F1208]">
+        <div className="mt-2 h-1 w-full overflow-hidden rounded-full bg-white/5">
           <div
             className="h-full bg-[#D97706] transition-all duration-700"
             style={{ width: done ? "100%" : "30%" }}
           />
         </div>
         
-        <p className="mt-2 text-[11px] font-bold text-muted-foreground/60">
-          {done ? "Tap to see your reservoir" : `Reward: +${challenge.bonusUnits} 💩 units`}
+        <p className="mt-2 text-[11px] font-medium text-muted-foreground">
+          {done ? "Tap to see your reservoir" : `Reward: +${challenge.bonusUnits} units`}
         </p>
       </div>
 
-      <ChevronRight className="h-5 w-5 text-[#D97706] shrink-0" />
+      <ChevronRight className="h-4 w-4 text-[#D97706] shrink-0" />
     </button>
   );
 };
