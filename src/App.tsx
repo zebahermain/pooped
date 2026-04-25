@@ -68,12 +68,10 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   }
 
   const params = new URLSearchParams(search);
-  if (params.get("redirect")?.startsWith("/splat/")) {
-    return <>{children}</>;
-  }
+  if (params.get("redirect")?.startsWith("/splat/")) return <>{children}</>;
 
-  if (!session && !localProfile) return <Navigate to="/auth" replace state={{ mode: "signin" }} />;
-  if (session && !hasRemoteProfile) return <Navigate to="/onboarding" replace />;
+  if (!session && !localProfile) return <Navigate to="/onboarding" replace />;
+  if (session && !hasRemoteProfile && !localProfile) return <Navigate to="/onboarding" replace />;
 
   return <>{children}</>;
 };

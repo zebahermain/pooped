@@ -12,6 +12,8 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 import {
   saveProfile,
   wipeLegacy,
@@ -22,7 +24,7 @@ import {
   getProfile,
 } from "@/lib/storage";
 
-const avatars: AvatarEmoji[] = ["💩", "🦠", "🌿", "🏋️", "💊", "🧘"];
+const avatars: AvatarEmoji[] = ["💩", "🦠", "🌿", "🏋️", "💊", "🧘‍♂️"];
 
 const goals: { id: Goal; label: string; emoji: string }[] = [
   { id: "digestion", label: "Improve digestion", emoji: "🌱" },
@@ -40,18 +42,31 @@ const freqs: { id: FrequencyPref; label: string }[] = [
 
 const Onboarding = () => {
   const navigate = useNavigate();
+  const { session, loading } = useAuth();
   const [step, setStep] = useState(0);
   const [name, setName] = useState("");
   const [avatar, setAvatar] = useState<AvatarEmoji>("💩");
   const [goal, setGoal] = useState<Goal | null>(null);
   const [frequencyPref, setFrequencyPref] = useState<FrequencyPref | null>(null);
+  const [checking, setChecking] = useState(true);
 
   useEffect(() => {
     wipeLegacy();
-    if (getProfile()) navigate("/", { replace: true });
-  }, [navigate]);
+    if (!loading) {
+      if (session) {
+        supabase.from("profiles").select("id").eq("id", session.user.id).single()
+          .then(({ data }) => {
+            if (data) navigate("/", { replace: true });
+            else setChecking(false);
+          });
+      } else {
+        if (getProfile()) navigate("/", { replace: true });
+        else setChecking(false);
+      }
+    }
+  }, [navigate, session, loading]);
 
-  const finish = () => {
+  const finish = async () => {
     if (!name.trim() || !goal || !frequencyPref) return;
     const profile: Profile = {
       name: name.trim(),
@@ -61,8 +76,21 @@ const Onboarding = () => {
       createdAt: Date.now(),
     };
     saveProfile(profile);
+
+    if (session) {
+      await supabase.from("profiles").upsert({
+        id: session.user.id,
+        name: profile.name,
+        avatar: profile.avatar,
+        goal: profile.goal,
+        frequency_pref: profile.frequencyPref,
+      });
+    }
+
     navigate("/");
   };
+
+  if (checking) return null;
 
   return (
     <div className="mx-auto flex min-h-screen w-full max-w-md flex-col px-6 py-10">
@@ -70,7 +98,6 @@ const Onboarding = () => {
         <ThemeToggle />
       </div>
 
-      {/* progress dots */}
       <div className="mb-8 flex justify-center gap-2 pt-4">
         {[0, 1, 2, 3, 4].map((i) => (
           <div
@@ -92,11 +119,8 @@ const Onboarding = () => {
             <p className="mt-4 text-xl font-medium text-muted-foreground">
               Your gut, gamified.
             </p>
-            <p className="mt-3 max-w-xs text-sm text-muted-foreground">
-              Log daily, build streaks, and learn what your body is telling you.
-            </p>
           </div>
-          <Button variant="hero" size="xl" className="w-full" onClick={() => setStep(1)}>
+          <Button variant="hero" size="xl" className="w-full h-14 font-black" onClick={() => setStep(1)}>
             Start tracking
           </Button>
         </div>
@@ -108,16 +132,17 @@ const Onboarding = () => {
             Step 1 of 3
           </span>
           <h2 className="mt-2 text-3xl font-bold">What's your name?</h2>
-          <p className="mt-2 text-muted-foreground">And pick an avatar.</p>
+          <p className="mt-2 text-muted-foreground text-sm font-medium">And pick an avatar.</p>
 
           <Input
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="Your name"
-            className="mt-6 h-14 rounded-2xl border-border bg-card text-base"
+            placeholder="Enter name"
+            className="mt-6 h-14 rounded-2xl border-border bg-card text-base font-bold text-foreground"
+            autoFocus
           />
 
-          <p className="mt-6 text-sm font-semibold">Choose avatar</p>
+          <p className="mt-8 text-sm font-bold text-foreground">Choose avatar</p>
           <div className="mt-3 grid grid-cols-3 gap-3">
             {avatars.map((a) => (
               <button
@@ -137,7 +162,7 @@ const Onboarding = () => {
           <Button
             variant="hero"
             size="xl"
-            className="mt-auto w-full"
+            className="mt-auto w-full h-14 font-black"
             disabled={!name.trim()}
             onClick={() => setStep(2)}
           >
@@ -147,12 +172,12 @@ const Onboarding = () => {
       )}
 
       {step === 2 && (
-        <div className="flex flex-1 flex-col animate-fade-in">
+        <div className="flex flex-1 flex-col animate-fade-in text-foreground">
           <span className="text-xs font-semibold uppercase tracking-widest text-primary">
             Step 2 of 4
           </span>
           <h2 className="mt-2 text-3xl font-bold">What's your main goal?</h2>
-          <p className="mt-2 text-muted-foreground">We'll tailor your experience.</p>
+          <p className="mt-2 text-muted-foreground text-sm font-medium">We'll tailor your experience.</p>
           <div className="mt-6 flex flex-col gap-3">
             {goals.map((g) => (
               <button
@@ -165,53 +190,30 @@ const Onboarding = () => {
                 }`}
               >
                 <span className="text-3xl">{g.emoji}</span>
-                <span className="font-semibold">{g.label}</span>
+                <span className="font-bold">{g.label}</span>
               </button>
             ))}
           </div>
 
           <Sheet>
             <SheetTrigger asChild>
-              <button className="mt-4 flex items-center justify-center gap-1.5 text-sm font-medium text-muted-foreground underline underline-offset-4 transition-colors hover:text-primary">
+              <button className="mt-6 flex items-center justify-center gap-1.5 text-xs font-bold text-muted-foreground/60 underline underline-offset-4 transition-colors hover:text-primary">
                 <Info className="h-4 w-4" />
                 What is IBS / IBD?
               </button>
             </SheetTrigger>
-            <SheetContent side="bottom" className="rounded-t-3xl max-h-[85vh] overflow-y-auto">
+            <SheetContent side="bottom" className="rounded-t-3xl max-h-[85vh] overflow-y-auto bg-card">
               <SheetHeader className="text-left">
-                <SheetTitle className="text-2xl">What is IBS / IBD? 🤔</SheetTitle>
-                <SheetDescription className="sr-only">
-                  Explainer about IBS and IBD
-                </SheetDescription>
+                <SheetTitle className="text-2xl font-black text-foreground">What is IBS / IBD? 🤔</SheetTitle>
               </SheetHeader>
-              <div className="mt-4 space-y-4 text-sm leading-relaxed">
-                <div className="rounded-2xl border border-border bg-card p-4">
-                  <p className="font-bold text-foreground">
-                    🌀 IBS — Irritable Bowel Syndrome
-                  </p>
-                  <p className="mt-1 text-muted-foreground">
-                    A common condition causing cramps, bloating, gas, diarrhoea or
-                    constipation. The gut is overly sensitive but not physically
-                    damaged. Triggers are often food, stress, or hormones.
-                  </p>
+              <div className="mt-4 space-y-4 text-sm leading-relaxed text-foreground">
+                <div className="rounded-2xl border border-white/5 bg-background p-4">
+                  <p className="font-bold">🌀 IBS — Irritable Bowel Syndrome</p>
+                  <p className="mt-1 text-muted-foreground">A common condition causing cramps, bloating, gas, or constipation.</p>
                 </div>
-                <div className="rounded-2xl border border-border bg-card p-4">
-                  <p className="font-bold text-foreground">
-                    🔥 IBD — Inflammatory Bowel Disease
-                  </p>
-                  <p className="mt-1 text-muted-foreground">
-                    Crohn's disease and ulcerative colitis. The gut is actually
-                    inflamed and needs medical treatment. Symptoms can include
-                    blood in stool, urgency, weight loss, and fatigue.
-                  </p>
-                </div>
-                <div className="rounded-2xl bg-primary/10 p-4">
-                  <p className="font-semibold text-foreground">How Pooped helps 💩</p>
-                  <p className="mt-1 text-muted-foreground">
-                    Logging daily helps you spot food triggers, track flare-ups, and
-                    share clear data with your doctor. We're not a diagnosis — just a
-                    very honest journal.
-                  </p>
+                <div className="rounded-2xl border border-white/5 bg-background p-4">
+                  <p className="font-bold text-foreground">🔥 IBD — Inflammatory Bowel Disease</p>
+                  <p className="mt-1 text-muted-foreground">Crohn's disease and ulcerative colitis. The gut is actually inflamed.</p>
                 </div>
               </div>
             </SheetContent>
@@ -220,7 +222,7 @@ const Onboarding = () => {
           <Button
             variant="hero"
             size="xl"
-            className="mt-auto w-full"
+            className="mt-auto w-full h-14 font-black"
             disabled={!goal}
             onClick={() => setStep(3)}
           >
@@ -230,38 +232,28 @@ const Onboarding = () => {
       )}
 
       {step === 3 && (
-        <div className="flex flex-1 flex-col animate-fade-in">
+        <div className="flex flex-1 flex-col animate-fade-in text-foreground">
           <span className="text-xs font-semibold uppercase tracking-widest text-primary">
             Oh, and one more thing 😈
           </span>
           <h2 className="mt-2 text-3xl font-bold">Meet your Reservoir 💩</h2>
-          <p className="mt-2 text-muted-foreground">
-            The most ridiculous part of Pooped — and we're proud of it.
-          </p>
-          <div className="mt-6 flex flex-col gap-3">
-            <div className="flex items-start gap-3 rounded-2xl border-2 border-transparent bg-card p-5 shadow-card">
-              <span className="text-2xl">💩</span>
-              <p className="text-sm font-medium leading-relaxed">
-                Log daily → fill your reservoir
-              </p>
-            </div>
-            <div className="flex items-start gap-3 rounded-2xl border-2 border-transparent bg-card p-5 shadow-card">
-              <span className="text-2xl">🚀</span>
-              <p className="text-sm font-medium leading-relaxed">
-                Build up enough → launch at friends
-              </p>
-            </div>
-            <div className="flex items-start gap-3 rounded-2xl border-2 border-transparent bg-card p-5 shadow-card">
-              <span className="text-2xl">😂</span>
-              <p className="text-sm font-medium leading-relaxed">
-                They get shat on → they join Pooped
-              </p>
-            </div>
+          <p className="mt-2 text-muted-foreground text-sm font-medium">The most ridiculous part of Pooped.</p>
+          <div className="mt-8 flex flex-col gap-4">
+            {[
+              { e: "💩", t: "Log daily → fill your reservoir" },
+              { e: "🚀", t: "Build up enough → launch at friends" },
+              { e: "😂", t: "They get shat on → they join Pooped" }
+            ].map((item, i) => (
+              <div key={i} className="flex items-center gap-4 rounded-2xl bg-white/5 p-5">
+                <span className="text-3xl">{item.e}</span>
+                <p className="text-sm font-bold leading-tight">{item.t}</p>
+              </div>
+            ))}
           </div>
           <Button
             variant="hero"
             size="xl"
-            className="mt-auto w-full"
+            className="mt-auto w-full h-14 font-black"
             onClick={() => setStep(4)}
           >
             Let's go 💩
@@ -270,18 +262,18 @@ const Onboarding = () => {
       )}
 
       {step === 4 && (
-        <div className="flex flex-1 flex-col animate-fade-in">
+        <div className="flex flex-1 flex-col animate-fade-in text-foreground">
           <span className="text-xs font-semibold uppercase tracking-widest text-primary">
             Step 3 of 3
           </span>
-          <h2 className="mt-2 text-3xl font-bold">How often do you usually go?</h2>
-          <p className="mt-2 text-muted-foreground">No wrong answers.</p>
+          <h2 className="mt-2 text-3xl font-bold">How often do you go?</h2>
+          <p className="mt-2 text-muted-foreground text-sm font-medium">No wrong answers.</p>
           <div className="mt-6 flex flex-col gap-3">
             {freqs.map((f) => (
               <button
                 key={f.id}
                 onClick={() => setFrequencyPref(f.id)}
-                className={`rounded-2xl border-2 bg-card p-5 text-left font-semibold transition-bounce ${
+                className={`rounded-2xl border-2 bg-card p-5 text-left font-bold transition-bounce ${
                   frequencyPref === f.id
                     ? "border-primary shadow-warm scale-[1.02]"
                     : "border-transparent shadow-card"
@@ -294,11 +286,11 @@ const Onboarding = () => {
           <Button
             variant="hero"
             size="xl"
-            className="mt-auto w-full"
+            className="mt-auto w-full h-14 font-black"
             disabled={!frequencyPref}
             onClick={finish}
           >
-            Let's go →
+            Finish Setup →
           </Button>
         </div>
       )}
