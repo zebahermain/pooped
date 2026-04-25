@@ -20,7 +20,8 @@ export const DailyChallengeCard = ({ refreshToken = 0 }: Props) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    setCompletion(getCompletionForDate());
+    const data = getCompletionForDate();
+    setCompletion(data);
     
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (user) {
@@ -41,6 +42,7 @@ export const DailyChallengeCard = ({ refreshToken = 0 }: Props) => {
 
   const handleClick = async () => {
     if (done && !isHandled) {
+      setRemoteAcknowledged(true);
       await acknowledgeCompletion(completion!.date);
       navigate("/reservoir", { state: { animateBonus: completion!.bonusUnits } });
     } else {

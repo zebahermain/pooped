@@ -5,7 +5,6 @@ export type ChallengeType =
   | "timing"
   | "score"
   | "streak"
-  | "log_count"
   | "food_tag";
 
 export interface ChallengeDef {
@@ -27,7 +26,6 @@ const POOL: ChallengeDef[] = [
   { type: "timing", text: "Log before 9am today ⏰", targetValue: 9, bonusUnits: 15 },
   { type: "score", text: "Hit a Gut Score above 75 today 🎯", targetValue: 75, bonusUnits: 20 },
   { type: "streak", text: "Keep your streak alive today 🔥", targetValue: 1, bonusUnits: 10 },
-  { type: "log_count", text: "Log twice today (if you actually go twice) 📊", targetValue: 2, bonusUnits: 15 },
   { type: "food_tag", text: "Tag your food today so we can spot your triggers 🥗", targetValue: 1, bonusUnits: 12 },
 ];
 
@@ -112,8 +110,6 @@ export const evaluateAndMarkCompletion = (
         const streak = getStreakData().currentStreak + (candidateAdded && !todaysLogs.length ? 1 : 0);
         return streak >= challenge.targetValue;
       }
-      case "log_count":
-        return effective.length >= challenge.targetValue;
       case "food_tag":
         return effective.some((l) => (l.foodTags?.length ?? 0) >= challenge.targetValue);
       default:
