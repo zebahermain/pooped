@@ -24,7 +24,7 @@ export const AVATAR_OPTIONS: AvatarOption[] = [
   { key: "ghost", label: "Ghostie", src: "/avatars/ghost.png" },
   { key: "alien", label: "Alien", src: "/avatars/alien.png" },
   { key: "sprout", label: "Sprout", src: "/avatars/sprout.png" },
-  { key: "💩", label: "Classic", src: null },
+  { key: "💩", label: "Classic", src: "/avatars/poop.png" },
 ];
 
 export const getAvatar = (key: string): AvatarOption => {
