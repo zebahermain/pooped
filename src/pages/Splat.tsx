@@ -132,7 +132,7 @@ const SplatPage = () => {
   if (error || !splat) {
     return (
       <div className="mx-auto flex min-h-screen max-w-md flex-col items-center justify-center bg-[#0f0f0f] px-6 text-center text-white">
-        <div className="text-6xl">🖽</div>
+        <div className="text-6xl">🤷</div>
         <h1 className="mt-4 text-2xl font-bold">Nothing here</h1>
         <p className="mt-2 text-sm text-white/60">
           {error ?? "This splat doesn't exist."}

@@ -10,7 +10,7 @@ interface Props {
 const HEADLINES = [
   "Real talk — did you actually go?",
   "Be honest. Your gut score depends on it 👀",
-  "No judgment... but did that actually happen? 🖽",
+  "No judgment... but did that actually happen? 🤔",
   "Your future self wants accurate data. Did you go?"
 ];
 
@@ -73,7 +73,7 @@ export const HonestyCheck = ({ open, onConfirm, onDeny }: Props) => {
       )}
 
       <div className="flex flex-col items-center text-center">
-        <div className="text-7xl animate-bounce">🖽</div>
+        <div className="text-7xl animate-bounce">🤔</div>
         <h2 className="mt-8 text-[24px] font-black tracking-tight text-white leading-tight max-w-sm">
           {headline}
         </h2>
