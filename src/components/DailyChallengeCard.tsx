@@ -46,7 +46,10 @@ export const DailyChallengeCard = ({ refreshToken = 0 }: Props) => {
       await acknowledgeCompletion(completion!.date);
       navigate("/reservoir", { state: { animateBonus: completion!.bonusUnits } });
     } else {
-      navigate("/reservoir");
+      // Challenge not yet completed — send the user to the action screen
+      // (logging a poop is what triggers most challenges, including
+      // "Hit a Gut Score above 75").
+      navigate("/log");
     }
   };
 

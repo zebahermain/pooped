@@ -29,7 +29,6 @@ interface Props {
 }
 
 type Step = 1 | 2 | 3;
-
 const RECIPIENT_PLACEHOLDERS = [
   "Name your victim 😈",
   "Who's getting hit? 💩",
@@ -45,6 +44,8 @@ export const SendSheet = ({ open, onOpenChange, reservoirUnits, onSent }: Props)
   const [style, setStyle] = useState<DeliveryStyle | null>(null);
   const [launching, setLaunching] = useState(false);
   const [resultSplat, setResultSplat] = useState<Splat | null>(null);
+  const [animationDone, setAnimationDone] = useState(false);
+  const [sharing, setSharing] = useState(false);
   const [inputPlaceholder, setInputPlaceholder] = useState(RECIPIENT_PLACEHOLDERS[0]);
 
   useEffect(() => {
@@ -56,6 +57,8 @@ export const SendSheet = ({ open, onOpenChange, reservoirUnits, onSent }: Props)
       setStyle(null);
       setLaunching(false);
       setResultSplat(null);
+      setAnimationDone(false);
+      setSharing(false);
     } else {
       const idx = Math.floor(Math.random() * RECIPIENT_PLACEHOLDERS.length);
       setInputPlaceholder(RECIPIENT_PLACEHOLDERS[idx]);
@@ -65,17 +68,16 @@ export const SendSheet = ({ open, onOpenChange, reservoirUnits, onSent }: Props)
   const profile = useMemo(() => getProfile(), []);
   const resolvedSenderName = (user ? profile?.name : senderNameGuest)?.trim() || "Someone";
 
-  const canStep1Continue = recipient.trim().length > 0 && (user || senderNameGuest.trim().length > 0);
+  const canContinue = recipient.trim().length > 0 && (user || senderNameGuest.trim().length > 0);
 
-  const handleStep1Select = (method: ShareMethod) => {
-    if (!canStep1Continue) {
+  const handleStep1Continue = () => {
+    if (!canContinue) {
       toast({
         title: "Who gets it?",
         description: user ? "Add a recipient name first." : "Add your name and the recipient's name.",
       });
       return;
     }
-    setShareMethod(method);
     setStep(2);
   };
 
@@ -100,15 +102,24 @@ export const SendSheet = ({ open, onOpenChange, reservoirUnits, onSent }: Props)
     }
   };
 
+  // Animation now just unlocks the share-method picker (last step).
   const onAnimationComplete = async () => {
-    if (!resultSplat || !shareMethod) return;
+    setAnimationDone(true);
+    const completion = getCompletionForDate();
+    if (completion && !completion.acknowledged) {
+      await acknowledgeCompletion(completion.date);
+    }
+  };
+
+  const handleSharePick = async (method: ShareMethod) => {
+    if (!resultSplat || sharing) return;
+    setShareMethod(method);
+    setSharing(true);
+
     const fullUrl = buildSplatUrl(resultSplat.id);
-    
     const shortId = resultSplat.id.substring(0, 8);
     const shortUrl = `${window.location.origin}/splat/${shortId}`;
-    
     const grade = getGrade(resultSplat.units);
-    
     const text = getRandomShareText({
       recipient: resultSplat.recipient_name,
       sender: resolvedSenderName,
@@ -117,26 +128,16 @@ export const SendSheet = ({ open, onOpenChange, reservoirUnits, onSent }: Props)
       splatUrl: shortUrl,
     });
 
-    const completion = getCompletionForDate();
-    if (completion && !completion.acknowledged) {
-      await acknowledgeCompletion(completion.date);
-    }
-
-    if (shareMethod === "copy") {
+    if (method === "copy") {
       await navigator.clipboard?.writeText(fullUrl).catch(() => {});
       toast({ title: "Link copied!", description: "Paste it anywhere 😈" });
-    } else if (shareMethod === "whatsapp") {
+    } else if (method === "whatsapp") {
       window.open(buildWhatsAppLink(text), "_blank", "noopener,noreferrer");
-    } else if (shareMethod === "share") {
+    } else if (method === "share") {
       if (navigator.share) {
         try {
-          await navigator.share({
-            title: 'Pooped!',
-            text: text,
-            url: fullUrl,
-          });
-        } catch (err) {
-        }
+          await navigator.share({ title: "Pooped!", text, url: fullUrl });
+        } catch (err) { /* user cancelled */ }
       } else {
         await navigator.clipboard?.writeText(fullUrl).catch(() => {});
         toast({ title: "Link copied!", description: "Sharing not supported, link copied instead." });
@@ -197,45 +198,19 @@ export const SendSheet = ({ open, onOpenChange, reservoirUnits, onSent }: Props)
               </div>
 
               <p className="mt-8 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60">
-                Send via
+                Pick how to deliver next →
               </p>
-              
-              <div className="mt-4 flex justify-between gap-6 px-2">
-                <button
-                  onClick={() => handleStep1Select("whatsapp")}
-                  className="group flex flex-col items-center gap-3 transition-transform active:scale-90"
-                  data-testid="share-whatsapp"
-                >
-                  <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[#25D366] text-white shadow-lg transition-all group-hover:scale-110">
-                    <svg className="h-8 w-8 fill-current" viewBox="0 0 24 24">
-                      <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.353-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L0 24l6.335-1.662c1.72.94 3.659 1.437 5.634 1.437h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
-                    </svg>
-                  </div>
-                  <span className="text-[11px] font-bold text-foreground">WhatsApp</span>
-                </button>
 
-                <button
-                  onClick={() => handleStep1Select("copy")}
-                  className="group flex flex-col items-center gap-3 transition-transform active:scale-90"
-                  data-testid="share-copy"
-                >
-                  <div className="flex h-16 w-16 items-center justify-center rounded-full bg-muted/40 text-foreground shadow-md transition-all group-hover:scale-110 group-hover:bg-muted/60">
-                    <Copy className="h-7 w-7" />
-                  </div>
-                  <span className="text-[11px] font-bold text-foreground">Copy link</span>
-                </button>
-
-                <button
-                  onClick={() => handleStep1Select("share")}
-                  className="group flex flex-col items-center gap-3 transition-transform active:scale-90"
-                  data-testid="share-more"
-                >
-                  <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg transition-all group-hover:scale-110">
-                    <Share2 className="h-7 w-7" strokeWidth={3} />
-                  </div>
-                  <span className="text-[11px] font-bold text-foreground">Share</span>
-                </button>
-              </div>
+              <Button
+                variant="hero"
+                size="xl"
+                className="mt-4 w-full h-14 font-black"
+                disabled={!canContinue}
+                onClick={handleStep1Continue}
+                data-testid="send-step1-continue"
+              >
+                Continue →
+              </Button>
             </div>
           )}
 
@@ -271,11 +246,66 @@ export const SendSheet = ({ open, onOpenChange, reservoirUnits, onSent }: Props)
           )}
         </div>
 
-        {step === 3 && launching && (
+        {step === 3 && launching && !animationDone && (
           <LaunchAnimation
             units={reservoirUnits}
             onComplete={onAnimationComplete}
           />
+        )}
+
+        {step === 3 && animationDone && resultSplat && (
+          <div className="mx-auto max-w-md animate-in fade-in slide-in-from-bottom-4 duration-300">
+            <h2 className="text-2xl font-black tracking-tight text-foreground">
+              Splat ready 💥
+            </h2>
+            <p className="mt-1 text-sm font-medium text-muted-foreground">
+              Now send it to {resultSplat.recipient_name}.
+            </p>
+
+            <p className="mt-8 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60">
+              Send via
+            </p>
+
+            <div className="mt-4 flex justify-between gap-6 px-2">
+              <button
+                onClick={() => handleSharePick("whatsapp")}
+                disabled={sharing}
+                className="group flex flex-col items-center gap-3 transition-transform active:scale-90 disabled:opacity-50"
+                data-testid="share-whatsapp"
+              >
+                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[#25D366] text-white shadow-lg transition-all group-hover:scale-110">
+                  <svg className="h-8 w-8 fill-current" viewBox="0 0 24 24">
+                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.353-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L0 24l6.335-1.662c1.72.94 3.659 1.437 5.634 1.437h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
+                  </svg>
+                </div>
+                <span className="text-[11px] font-bold text-foreground">WhatsApp</span>
+              </button>
+
+              <button
+                onClick={() => handleSharePick("copy")}
+                disabled={sharing}
+                className="group flex flex-col items-center gap-3 transition-transform active:scale-90 disabled:opacity-50"
+                data-testid="share-copy"
+              >
+                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-muted/40 text-foreground shadow-md transition-all group-hover:scale-110 group-hover:bg-muted/60">
+                  <Copy className="h-7 w-7" />
+                </div>
+                <span className="text-[11px] font-bold text-foreground">Copy link</span>
+              </button>
+
+              <button
+                onClick={() => handleSharePick("share")}
+                disabled={sharing}
+                className="group flex flex-col items-center gap-3 transition-transform active:scale-90 disabled:opacity-50"
+                data-testid="share-more"
+              >
+                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg transition-all group-hover:scale-110">
+                  <Share2 className="h-7 w-7" strokeWidth={3} />
+                </div>
+                <span className="text-[11px] font-bold text-foreground">Share</span>
+              </button>
+            </div>
+          </div>
         )}
       </SheetContent>
     </Sheet>
