@@ -10,30 +10,39 @@ import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { pushProfileToCloud } from "@/lib/profileSync";
 import { hasHonestLoggerBadge } from "@/lib/honesty";
+import { deleteAccount } from "@/lib/deleteAccount";
+import { AVATAR_OPTIONS, AvatarDisplay } from "@/lib/avatars";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+} from "@/components/ui/alert-dialog";
+import { AlertTriangle, Loader2 } from "lucide-react";
 import {
   getAverageScore,
   getLogs,
   getProfile,
   getStreakData,
   saveProfile,
-  type AvatarEmoji,
   type FrequencyPref,
   type Goal,
   type Profile,
 } from "@/lib/storage";
 
-const avatars: AvatarEmoji[] = ["💩", "🦠", "🌿", "🏋️", "💊", "🧘"];
 const goals: { id: Goal; label: string }[] = [
-  { id: "digestion", label: "Improve digestion" },
-  { id: "ibs", label: "Track IBS / IBD" },
-  { id: "weight", label: "Lose weight & gut health" },
-  { id: "curious", label: "Just curious" },
+  { id: "ibs", label: "Track patterns" },
+  { id: "weight", label: "Lose weight" },
+  { id: "digestion", label: "Improve health" },
+  { id: "curious", label: "Curious" },
 ];
 const freqs: { id: FrequencyPref; label: string }[] = [
   { id: "once", label: "Once a day" },
-  { id: "two_three", label: "2–3 times a day" },
-  { id: "less", label: "Less than once a day" },
-  { id: "irregular", label: "Irregularly" },
+  { id: "two_three", label: "2–3 times" },
+  { id: "less", label: "Less than once" },
+  { id: "irregular", label: "Varies" },
 ];
 
 const ProfilePage = () => {
@@ -41,6 +50,10 @@ const ProfilePage = () => {
   const { user, signOut } = useAuth();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [editing, setEditing] = useState(false);
+  const [showDelete, setShowDelete] = useState(false);
+  const [confirmEmail, setConfirmEmail] = useState("");
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   useEffect(() => {
     const p = getProfile();
@@ -77,7 +90,7 @@ const ProfilePage = () => {
       </header>
 
       <section className="flex flex-col items-center rounded-3xl bg-card p-6 shadow-card border border-border">
-        <div className="text-6xl">{profile.avatar}</div>
+        <AvatarDisplay avatar={profile.avatar} size={96} />
         <h2 className="mt-3 text-xl font-bold">{profile.name}</h2>
         <p className="text-xs text-muted-foreground">Member since {created}</p>
       </section>
@@ -152,17 +165,18 @@ const ProfilePage = () => {
                 Avatar
               </label>
               <div className="mt-2 grid grid-cols-6 gap-2">
-                {avatars.map((a) => (
+                {AVATAR_OPTIONS.map((a) => (
                   <button
-                    key={a}
-                    onClick={() => setProfile({ ...profile, avatar: a })}
-                    className={`flex aspect-square items-center justify-center rounded-xl border-2 text-2xl transition-bounce ${
-                      profile.avatar === a
+                    key={a.key}
+                    onClick={() => setProfile({ ...profile, avatar: a.key })}
+                    className={`flex aspect-square items-center justify-center rounded-xl border-2 transition-bounce ${
+                      profile.avatar === a.key
                         ? "border-primary bg-primary/10"
                         : "border-border bg-background"
                     }`}
+                    aria-label={a.label}
                   >
-                    {a}
+                    <AvatarDisplay avatar={a.key} size={36} />
                   </button>
                 ))}
               </div>
@@ -224,26 +238,108 @@ const ProfilePage = () => {
 
       <section className="mt-6 rounded-3xl bg-card p-5 shadow-card border border-border">
         <h3 className="font-bold">Account</h3>
-        {user ? (
-          <div className="mt-3 space-y-3">
-            <p className="text-sm text-muted-foreground">
-              Signed in as <span className="font-medium text-foreground">{user.email}</span>
-            </p>
-            <Button variant="outline" className="w-full" onClick={() => signOut()}>
-              Sign out
-            </Button>
-          </div>
-        ) : (
-          <div className="mt-3 space-y-3">
-            <p className="text-sm text-muted-foreground">
-              You're using Pooped as a guest. Create an account to sync across devices and never lose your data.
-            </p>
-            <Button variant="hero" className="w-full" onClick={() => navigate("/auth")}>
-              Create free account →
-            </Button>
-          </div>
-        )}
+        <div className="mt-3 space-y-3">
+          <p className="text-sm text-muted-foreground">
+            Signed in as <span className="font-medium text-foreground">{user?.email}</span>
+          </p>
+          <Button variant="outline" className="w-full" onClick={() => signOut()}>
+            Sign out
+          </Button>
+        </div>
       </section>
+
+      <section className="mt-6 rounded-3xl border border-destructive/30 bg-destructive/5 p-5">
+        <h3 className="font-bold text-destructive">Danger zone</h3>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Permanently delete your account and all associated data. This cannot be undone.
+        </p>
+        <Button
+          variant="outline"
+          className="mt-3 w-full border-destructive/40 text-destructive hover:bg-destructive/10"
+          onClick={() => {
+            setConfirmEmail("");
+            setDeleteError(null);
+            setShowDelete(true);
+          }}
+        >
+          Delete account
+        </Button>
+      </section>
+
+      <AlertDialog open={showDelete} onOpenChange={setShowDelete}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-destructive" />
+              Delete your account?
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-3 pt-2 text-left">
+              <span className="block text-sm">This will permanently delete:</span>
+              <ul className="ml-4 list-disc space-y-1 text-sm">
+                <li>All your logs</li>
+                <li>Your streaks</li>
+                <li>Your reservoir</li>
+                <li>Your account data</li>
+              </ul>
+              <span className="block text-sm font-medium text-destructive">
+                This cannot be undone. Type your email to confirm.
+              </span>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+
+          <Input
+            type="email"
+            placeholder={user?.email ?? "you@example.com"}
+            value={confirmEmail}
+            onChange={(e) => setConfirmEmail(e.target.value)}
+            className="h-11 rounded-xl"
+            autoCapitalize="off"
+            autoCorrect="off"
+            autoComplete="off"
+            spellCheck={false}
+          />
+
+          {deleteError && (
+            <p className="text-sm text-destructive">{deleteError}</p>
+          )}
+
+          <AlertDialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowDelete(false)}
+              disabled={deleting}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              disabled={
+                deleting ||
+                !confirmEmail.trim() ||
+                confirmEmail.trim().toLowerCase() !== (user?.email ?? "").toLowerCase()
+              }
+              onClick={async () => {
+                setDeleting(true);
+                setDeleteError(null);
+                try {
+                  await deleteAccount(confirmEmail.trim());
+                  setShowDelete(false);
+                  toast({
+                    title: "Account deleted. We'll miss you 👋",
+                  });
+                  navigate("/auth", { replace: true });
+                } catch (e) {
+                  setDeleteError((e as Error).message ?? "Could not delete account");
+                } finally {
+                  setDeleting(false);
+                }
+              }}
+            >
+              {deleting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Delete forever"}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AppShell>
   );
 };
