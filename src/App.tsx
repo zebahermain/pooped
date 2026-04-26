@@ -7,9 +7,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { syncProfileForUser } from "@/lib/profileSync";
-import { AccountPromptDialog } from "@/components/AccountPromptDialog";
 import { supabase } from "@/integrations/supabase/client";
-import { getProfile } from "@/lib/storage";
 import Index from "./pages/Index.tsx";
 import Onboarding from "./pages/Onboarding.tsx";
 import LogEntry from "./pages/LogEntry.tsx";
@@ -35,28 +33,37 @@ const ProfileSyncer = () => {
   return null;
 };
 
+/**
+ * Mandatory-sign-in gate.
+ *   - no session              -> /auth (landing page with Google sign-in)
+ *   - session + no profile    -> /onboarding (first-time user)
+ *   - session + has profile   -> render protected children
+ *
+ * Returning users skip onboarding entirely. Sign-out clears the session and
+ * lands them back on /auth — no ghost data.
+ */
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { session, loading } = useAuth();
   const [checkingProfile, setCheckingProfile] = useState(true);
   const [hasRemoteProfile, setHasRemoteProfile] = useState(false);
-  const localProfile = getProfile();
   const { search } = useLocation();
 
   useEffect(() => {
-    if (!loading) {
-      if (session) {
-        supabase.from("profiles").select("id").eq("id", session.user.id).single()
-          .then(({ data }) => {
-            setHasRemoteProfile(!!data);
-            setCheckingProfile(false);
-          })
-          .catch(() => {
-            setCheckingProfile(false);
-          });
-      } else {
-        setCheckingProfile(false);
-      }
+    if (loading) return;
+    if (!session) {
+      setCheckingProfile(false);
+      return;
     }
+    supabase
+      .from("profiles")
+      .select("id, name")
+      .eq("id", session.user.id)
+      .maybeSingle()
+      .then(({ data }) => {
+        setHasRemoteProfile(!!(data && data.name));
+        setCheckingProfile(false);
+      })
+      .catch(() => setCheckingProfile(false));
   }, [session, loading]);
 
   if (loading || (session && checkingProfile)) {
@@ -67,11 +74,12 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
     );
   }
 
+  // Allow public splat redirect to pass through unauthenticated.
   const params = new URLSearchParams(search);
   if (params.get("redirect")?.startsWith("/splat/")) return <>{children}</>;
 
-  if (!session && !localProfile) return <Navigate to="/onboarding" replace />;
-  if (session && !hasRemoteProfile && !localProfile) return <Navigate to="/onboarding" replace />;
+  if (!session) return <Navigate to="/auth" replace />;
+  if (!hasRemoteProfile) return <Navigate to="/onboarding" replace />;
 
   return <>{children}</>;
 };
@@ -105,7 +113,6 @@ const App = () => (
           <Sonner />
           <BrowserRouter>
             <ProfileSyncer />
-            <AccountPromptDialog />
             <RootRouter />
           </BrowserRouter>
         </TooltipProvider>

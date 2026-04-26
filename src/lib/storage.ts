@@ -1,6 +1,8 @@
 export type Goal = "digestion" | "ibs" | "weight" | "curious";
 export type FrequencyPref = "once" | "two_three" | "less" | "irregular";
-export type AvatarEmoji = "💩" | "🦠" | "🌿" | "🏋️" | "💊" | "🧘";
+// Avatar identifier. Either a legacy emoji ("💩", "🦠", etc.) or a key from
+// AVATAR_OPTIONS in src/lib/avatars.tsx (e.g. "avocado", "pepper", ...).
+export type AvatarEmoji = string;
 export type StoolColor =
   | "medium_brown"
   | "dark_brown"

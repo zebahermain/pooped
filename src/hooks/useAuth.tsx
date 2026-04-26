@@ -30,6 +30,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const signOut = async () => {
     await supabase.auth.signOut();
+    // Mandatory-sign-in flow: clear all local app data on sign-out so the
+    // landing page never shows stale "ghost" data from the previous user.
+    try {
+      Object.keys(localStorage)
+        .filter((k) => k.startsWith("pooped"))
+        .forEach((k) => localStorage.removeItem(k));
+    } catch {}
   };
 
   return (
