@@ -26,6 +26,7 @@ interface Props {
   onOpenChange: (open: boolean) => void;
   reservoirUnits: number;
   onSent: () => void;
+  prefillRecipient?: string;
 }
 
 type Step = 1 | 2 | 3;
@@ -35,7 +36,7 @@ const RECIPIENT_PLACEHOLDERS = [
   "Who deserves the splat?"
 ];
 
-export const SendSheet = ({ open, onOpenChange, reservoirUnits, onSent }: Props) => {
+export const SendSheet = ({ open, onOpenChange, reservoirUnits, onSent, prefillRecipient }: Props) => {
   const { user } = useAuth();
   const [step, setStep] = useState<Step>(1);
   const [recipient, setRecipient] = useState("");
@@ -62,8 +63,9 @@ export const SendSheet = ({ open, onOpenChange, reservoirUnits, onSent }: Props)
     } else {
       const idx = Math.floor(Math.random() * RECIPIENT_PLACEHOLDERS.length);
       setInputPlaceholder(RECIPIENT_PLACEHOLDERS[idx]);
+      if (prefillRecipient) setRecipient(prefillRecipient);
     }
-  }, [open]);
+  }, [open, prefillRecipient]);
 
   const profile = useMemo(() => getProfile(), []);
   const resolvedSenderName = (user ? profile?.name : senderNameGuest)?.trim() || "Someone";

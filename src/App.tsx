@@ -81,6 +81,21 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   if (!session) return <Navigate to="/auth" replace />;
   if (!hasRemoteProfile) return <Navigate to="/onboarding" replace />;
 
+  // Resume the retaliate flow if the user landed here from a splat page
+  // before signing up. Stashed in localStorage by /splat/[id] -> Retaliate.
+  try {
+    const pending = localStorage.getItem("pooped_pending_retaliate_target");
+    if (pending) {
+      localStorage.removeItem("pooped_pending_retaliate_target");
+      return (
+        <Navigate
+          to={`/reservoir?target=${encodeURIComponent(pending)}&send=1`}
+          replace
+        />
+      );
+    }
+  } catch {}
+
   return <>{children}</>;
 };
 
