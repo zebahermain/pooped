@@ -11,6 +11,7 @@ import {
   getGrade,
   getReservoirState,
   hasSeenLaunchTip,
+  LAUNCH_THRESHOLD,
   markLaunchTipSeen,
 } from "@/lib/reservoir";
 import { getProfile } from "@/lib/storage";
@@ -25,13 +26,17 @@ const Reservoir = () => {
 
   // /reservoir?target=<name>&send=1 — used by the splat retaliate flow to
   // open the SendSheet with the recipient pre-filled as the original sender.
+  // Only auto-opens when the user can actually launch (>= LAUNCH_THRESHOLD);
+  // otherwise we keep the sheet closed so they can fill up first.
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const target = params.get("target");
     const auto = params.get("send");
     if (target) setRetaliateTarget(target);
-    if (target && auto === "1") setSendOpen(true);
-  }, [location.search]);
+    if (target && auto === "1" && state.units >= LAUNCH_THRESHOLD) {
+      setSendOpen(true);
+    }
+  }, [location.search, state.units]);
   
   const bonusToAnimate = location.state?.animateBonus || 0;
   const [displayUnits, setDisplayUnits] = useState(

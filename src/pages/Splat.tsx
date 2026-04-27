@@ -3,8 +3,9 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
-import { getReservoirState } from "@/lib/reservoir";
+import { LAUNCH_THRESHOLD, getReservoirState } from "@/lib/reservoir";
 import {
   fetchSplat,
   fetchSplatsToday,
@@ -275,7 +276,18 @@ const SplatPage = () => {
               onClick={() => {
                 const target = encodeURIComponent(sender);
                 if (isRegistered) {
-                  navigate(`/reservoir?target=${target}&send=1`);
+                  // Only auto-open SendSheet when viewer can actually launch.
+                  // Otherwise drop them on /reservoir so they can fill up first.
+                  const canLaunch = viewerUnits >= LAUNCH_THRESHOLD;
+                  if (canLaunch) {
+                    navigate(`/reservoir?target=${target}&send=1`);
+                  } else {
+                    toast({
+                      title: `Need ${LAUNCH_THRESHOLD} units to launch`,
+                      description: `Log a poop to fill your reservoir, then come back and fire at ${sender} 💩`,
+                    });
+                    navigate(`/reservoir?target=${target}`);
+                  }
                 } else {
                   // Stash the target so we can resume after sign-up + onboarding.
                   try {
@@ -285,7 +297,9 @@ const SplatPage = () => {
                 }
               }}
             >
-              Retaliate 💩 →
+              {isRegistered && viewerUnits < LAUNCH_THRESHOLD
+                ? "Fill up to fire back →"
+                : "Retaliate 💩 →"}
             </Button>
 
             {!isRegistered && (
