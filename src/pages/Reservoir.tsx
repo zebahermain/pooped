@@ -21,6 +21,17 @@ const Reservoir = () => {
   const [state, setState] = useState(getReservoirState());
   const [sendOpen, setSendOpen] = useState(false);
   const [showFirstTip, setShowFirstTip] = useState(false);
+  const [retaliateTarget, setRetaliateTarget] = useState<string | undefined>();
+
+  // /reservoir?target=<name>&send=1 — used by the splat retaliate flow to
+  // open the SendSheet with the recipient pre-filled as the original sender.
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const target = params.get("target");
+    const auto = params.get("send");
+    if (target) setRetaliateTarget(target);
+    if (target && auto === "1") setSendOpen(true);
+  }, [location.search]);
   
   const bonusToAnimate = location.state?.animateBonus || 0;
   const [displayUnits, setDisplayUnits] = useState(
@@ -151,6 +162,7 @@ const Reservoir = () => {
         onOpenChange={setSendOpen}
         reservoirUnits={state.units}
         onSent={refresh}
+        prefillRecipient={retaliateTarget}
       />
     </AppShell>
   );
