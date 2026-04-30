@@ -64,6 +64,24 @@ export const ReportCard = () => {
 
   if (!card) return null;
 
+  // Empty month — never logged. Don't show F/D grades for a month they
+  // weren't even active. Single muted line instead.
+  if (card.daysLogged === 0) {
+    return (
+      <p
+        className="text-sm text-muted-foreground italic"
+        data-testid="report-card-empty"
+      >
+        No data for {card.monthLabel} — your first report card generates
+        after 5 logs in a month.
+      </p>
+    );
+  }
+
+  // Under-5-logs gating: hide actual grades, show locked placeholders so
+  // users know a real report card unlocks at 5 logs/month.
+  const isLocked = card.daysLogged < 5;
+
   const loadAiComment = async () => {
     if (!user || !isPro || commentLoading) return;
     setCommentLoading(true);
@@ -101,10 +119,10 @@ export const ReportCard = () => {
       <div className="mt-4 h-px bg-border" />
 
       <div className="mt-4 space-y-2 text-sm">
-        <GradeRow label="Consistency" grade={card.consistencyGrade} />
-        <GradeRow label="Color Health" grade={card.colorHealthGrade} />
-        <GradeRow label="Frequency" grade={card.frequencyGrade} />
-        <GradeRow label="Streak" grade={card.streakGrade} />
+        <GradeRow label="Consistency" grade={isLocked ? "—" : card.consistencyGrade} locked={isLocked} />
+        <GradeRow label="Color Health" grade={isLocked ? "—" : card.colorHealthGrade} locked={isLocked} />
+        <GradeRow label="Frequency" grade={isLocked ? "—" : card.frequencyGrade} locked={isLocked} />
+        <GradeRow label="Streak" grade={isLocked ? "—" : card.streakGrade} locked={isLocked} />
       </div>
 
       <div className="mt-4 h-px bg-border" />
@@ -112,11 +130,12 @@ export const ReportCard = () => {
       <div className="mt-4 flex items-baseline justify-between">
         <span className="text-base font-bold">Overall GPA</span>
         <span className="text-xl font-extrabold text-primary">
-          {card.overallGPA.toFixed(2)} / 4.0
+          {isLocked ? "—" : `${card.overallGPA.toFixed(2)} / 4.0`}
         </span>
       </div>
       <p className="mt-1 text-xs text-muted-foreground">
         Days attended: {card.daysLogged} / {card.daysInMonth}
+        {isLocked && " — log 5 days this month to unlock grades 🔓"}
       </p>
 
       {/* Teacher's comment */}
@@ -166,11 +185,11 @@ export const ReportCard = () => {
   );
 };
 
-const GradeRow = ({ label, grade }: { label: string; grade: string }) => (
+const GradeRow = ({ label, grade, locked }: { label: string; grade: string; locked?: boolean }) => (
   <div className="flex items-center justify-between">
     <span className="text-foreground">{label}</span>
-    <span className={`text-base font-extrabold ${gradeColor(grade)}`}>
-      {grade}
+    <span className={`text-base font-extrabold ${locked ? "text-muted-foreground" : gradeColor(grade)}`}>
+      {locked ? <Lock className="h-4 w-4 inline" /> : grade}
     </span>
   </div>
 );
