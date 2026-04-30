@@ -89,16 +89,18 @@ const ProfilePage = () => {
         <h1 className="text-2xl font-bold">Profile</h1>
       </header>
 
-      <section className="flex flex-col items-center rounded-3xl bg-card p-6 shadow-card border border-border">
-        <AvatarDisplay avatar={profile.avatar} size={96} />
-        <h2 className="mt-3 text-xl font-bold">{profile.name}</h2>
-        <p className="text-xs text-muted-foreground">Member since {created}</p>
+      <section className="flex items-center gap-4 py-4">
+        <AvatarDisplay avatar={profile.avatar} size={40} />
+        <div className="flex flex-col">
+          <h2 className="text-[18px] font-bold leading-tight">{profile.name}</h2>
+          <p className="text-[11px] text-muted-foreground">Member since {created}</p>
+        </div>
       </section>
 
       {/* Stats */}
       <section className="mt-4 grid grid-cols-3 gap-3">
         <Stat label="Total logs" value={totalLogs} />
-        <Stat label="Streak" value={`${streak.currentStreak}🔥`} />
+        <Stat label="Best streak" value={`${streak.longestStreak}🔥`} />
         <Stat label="Avg score" value={avg} />
       </section>
 
@@ -115,6 +117,9 @@ const ProfilePage = () => {
       )}
 
       <section className="mt-6">
+        <p className="mb-2 text-[12px] font-semibold uppercase tracking-wider text-muted-foreground">
+          This month
+        </p>
         <div className="mb-3 flex items-center justify-between">
           <h3 className="font-bold">Streak calendar</h3>
           <span className="text-xs text-muted-foreground">Tap a day to see its score</span>
@@ -135,6 +140,15 @@ const ProfilePage = () => {
         </div>
         <ReportCard />
       </section>
+
+      {/* Account settings divider */}
+      <div className="mt-8 mb-2 flex items-center gap-3">
+        <div className="h-px flex-1 bg-border" />
+        <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+          Account settings
+        </span>
+        <div className="h-px flex-1 bg-border" />
+      </div>
 
       {/* Edit */}
       <section className="mt-6 rounded-3xl bg-card p-5 shadow-card border border-border">

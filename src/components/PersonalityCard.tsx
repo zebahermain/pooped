@@ -43,7 +43,7 @@ export const PersonalityCard = () => {
         className="rounded-3xl border border-border bg-card p-6 text-center shadow-card"
         data-testid="personality-locked"
       >
-        <div className="text-5xl opacity-40">🗺️</div>
+        <div className="text-5xl opacity-40">🪞</div>
         <h3 className="mt-3 inline-flex items-center gap-1.5 text-lg font-bold">
           <Lock className="h-4 w-4 text-muted-foreground" />
           Log {PERSONALITY_UNLOCK_THRESHOLD} days to unlock your Gut Personality
