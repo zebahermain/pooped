@@ -25,6 +25,25 @@ export const StreakMonthCalendar = () => {
 
   const logs = useMemo(() => getLogs(), []);
 
+  // Build a Set of date keys (YYYY-MM-DD) that are part of the CURRENT
+  // streak — consecutive logged days ending today (or yesterday if today
+  // hasn't been logged yet). Used to render the amber connector.
+  const streakSet = useMemo(() => {
+    const set = new Set<string>();
+    const pad = (n: number) => String(n).padStart(2, "0");
+    const key = (d: Date) =>
+      `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+    const logged = new Set(logs.map((l) => key(new Date(l.ts))));
+    const cur = new Date();
+    cur.setHours(0, 0, 0, 0);
+    if (!logged.has(key(cur))) cur.setDate(cur.getDate() - 1); // grace if today unlogged
+    while (logged.has(key(cur))) {
+      set.add(key(cur));
+      cur.setDate(cur.getDate() - 1);
+    }
+    return set;
+  }, [logs]);
+
   const month = cursor.getMonth();
   const year = cursor.getFullYear();
 
@@ -91,6 +110,24 @@ export const StreakMonthCalendar = () => {
           if (!c.date) return <span key={`pad-${i}`} />;
           const cell = computeDayCell(c.date, logs);
           const bg = DAY_COLOR_HEX[cell.color];
+          const inStreak = streakSet.has(cell.date);
+          // Connect to neighbors only if they're also part of the streak AND
+          // share the same calendar week (same row in the 7-col grid).
+          const col = i % 7;
+          const prevInRow = col > 0 ? cells[i - 1] : null;
+          const nextInRow = col < 6 ? cells[i + 1] : null;
+          const prevInStreak = !!(
+            prevInRow?.date &&
+            streakSet.has(
+              `${prevInRow.date.getFullYear()}-${String(prevInRow.date.getMonth() + 1).padStart(2, "0")}-${String(prevInRow.date.getDate()).padStart(2, "0")}`
+            )
+          );
+          const nextInStreak = !!(
+            nextInRow?.date &&
+            streakSet.has(
+              `${nextInRow.date.getFullYear()}-${String(nextInRow.date.getMonth() + 1).padStart(2, "0")}-${String(nextInRow.date.getDate()).padStart(2, "0")}`
+            )
+          );
           return (
             <div
               key={cell.date}
@@ -112,11 +149,24 @@ export const StreakMonthCalendar = () => {
               }}
               title={
                 cell.avgScore !== null
-                  ? `${cell.date} · Gut Score ${cell.avgScore}`
+                  ? `${cell.date} · Gut Score ${cell.avgScore}${inStreak ? " · 🔥 Current streak" : ""}`
                   : `${cell.date} · No log`
               }
             >
-              {c.date.getDate()}
+              {/* Streak connector — amber bar behind consecutive streak days
+                  in the same row. Only drawn between cells, never wrapping. */}
+              {inStreak && (prevInStreak || nextInStreak) && (
+                <span
+                  aria-hidden
+                  className="pointer-events-none absolute top-1/2 -z-0 h-1 -translate-y-1/2 rounded-full"
+                  style={{
+                    backgroundColor: "#F59E0B",
+                    left: prevInStreak ? "-50%" : "50%",
+                    right: nextInStreak ? "-50%" : "50%",
+                  }}
+                />
+              )}
+              <span className="relative z-10">{c.date.getDate()}</span>
             </div>
           );
         })}
@@ -127,6 +177,7 @@ export const StreakMonthCalendar = () => {
         <Legend color={DAY_COLOR_HEX.amber} label="40–69" />
         <Legend color={DAY_COLOR_HEX.red} label="< 40" />
         <Legend color={DAY_COLOR_HEX.grey} label="No log" />
+        <Legend color="#F59E0B" label="🔥 Current streak" />
       </div>
     </section>
   );

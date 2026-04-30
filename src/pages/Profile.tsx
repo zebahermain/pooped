@@ -100,9 +100,12 @@ const ProfilePage = () => {
       {/* Stats */}
       <section className="mt-4 grid grid-cols-3 gap-3">
         <Stat label="Total logs" value={totalLogs} />
-        <Stat label="Best streak" value={`${streak.longestStreak}🔥`} />
+        <Stat label="Streak" value={`${streak.currentStreak}🔥`} />
         <Stat label="Avg score" value={avg} />
       </section>
+      <p className="mt-2 text-center text-[12px] text-muted-foreground">
+        🏆 Personal best: {streak.longestStreak} day streak
+      </p>
 
       {hasHonestLoggerBadge() && (
         <section className="mt-4 flex items-start gap-3 rounded-3xl border border-success/30 bg-success/10 p-4">
