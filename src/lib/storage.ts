@@ -245,8 +245,13 @@ export const saveLog = (log: PoopLog) => {
   updateStreak();
 };
 
-const toDateStr = (ts: number) => new Date(ts).toISOString().slice(0, 10);
-const todayStr = () => new Date().toISOString().slice(0, 10);
+// Local YYYY-MM-DD — using toISOString() rolls timezones east of UTC back
+// a day for late-evening logs (e.g. 11pm IST -> "yesterday" UTC), which
+// caused a mismatch with the calendar grid keys.
+const pad = (n: number) => String(n).padStart(2, "0");
+const dateToLocalStr = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+const toDateStr = (ts: number) => dateToLocalStr(new Date(ts));
+const todayStr = () => dateToLocalStr(new Date());
 
 export const getTodaysLogs = (): PoopLog[] => {
   const today = todayStr();
