@@ -72,12 +72,21 @@ const Onboarding = () => {
         if (data && data.name && data.frequency_pref) {
           navigate("/", { replace: true });
         } else {
-          // Pre-fill from Google identity if available.
+          // Pre-fill from Google identity if available; otherwise fall back
+          // to the local-part of the email (e.g. 'zeba.hermain' from
+          // 'zeba.hermain@gmail.com'), tidied to a friendly first name.
           const meta = session.user.user_metadata as
             | { full_name?: string; name?: string }
             | undefined;
+          const fromEmail = (session.user.email ?? "")
+            .split("@")[0]
+            .replace(/[._-]+/g, " ")
+            .replace(/\d+/g, "")
+            .trim()
+            .replace(/\b\w/g, (c) => c.toUpperCase());
           if (meta?.full_name) setName(meta.full_name);
           else if (meta?.name) setName(meta.name);
+          else if (fromEmail) setName(fromEmail);
           setChecking(false);
         }
       });
@@ -156,9 +165,9 @@ const Onboarding = () => {
           <span className="text-xs font-semibold uppercase tracking-widest text-primary">
             Step 1 of 4
           </span>
-          <h2 className="mt-2 text-3xl font-bold">What&apos;s your name?</h2>
+          <h2 className="mt-2 text-3xl font-bold">What should we call you?</h2>
           <p className="mt-2 text-muted-foreground text-sm font-medium">
-            And pick an avatar.
+            We&apos;ve guessed from your email — change it if you like, then continue.
           </p>
 
           <Input
