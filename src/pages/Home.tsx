@@ -97,7 +97,7 @@ const Home = () => {
       <header className="mb-2">
         <p className="text-sm text-muted-foreground font-medium">Welcome back</p>
         <h1 className="text-2xl font-black text-foreground">
-          Hey {profile.name} {profile.avatar}
+          Hey {profile.name}
         </h1>
       </header>
 
