@@ -56,11 +56,15 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
     }
     supabase
       .from("profiles")
-      .select("id, name")
+      .select("id, name, frequency_pref")
       .eq("id", session.user.id)
       .maybeSingle()
       .then(({ data }) => {
-        setHasRemoteProfile(!!(data && data.name));
+        // A DB trigger (handle_new_user) auto-creates a profiles row with the
+        // Google display name on first sign-up, so checking just `name` made
+        // us skip onboarding for every new user. `frequency_pref` is only
+        // written by Onboarding.finish(), so it's a reliable completion flag.
+        setHasRemoteProfile(!!(data && data.name && data.frequency_pref));
         setCheckingProfile(false);
       })
       .catch(() => setCheckingProfile(false));

@@ -39,7 +39,10 @@ export const syncProfileForUser = async (userId: string) => {
   }
 
   // Otherwise, pull cloud -> local so the app keeps working off localStorage.
-  if (cloud && cloud.name) {
+  // Only treat the cloud row as "real" when it has frequency_pref set — the
+  // handle_new_user DB trigger auto-populates `name` from Google metadata at
+  // sign-up, so `name` alone is not a signal that onboarding is done.
+  if (cloud && cloud.name && cloud.frequency_pref) {
     const merged: Profile = {
       name: cloud.name,
       avatar: (cloud.avatar as Profile["avatar"]) || "💩",

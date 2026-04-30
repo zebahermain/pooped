@@ -62,11 +62,14 @@ const Onboarding = () => {
     }
     supabase
       .from("profiles")
-      .select("id, name")
+      .select("id, name, frequency_pref")
       .eq("id", session.user.id)
       .maybeSingle()
       .then(({ data }) => {
-        if (data && data.name) {
+        // Must have BOTH name AND frequency_pref — the DB trigger auto-fills
+        // name from Google on first sign-up, but frequency_pref is only set
+        // here in finish(), so it's the real "onboarding complete" signal.
+        if (data && data.name && data.frequency_pref) {
           navigate("/", { replace: true });
         } else {
           // Pre-fill from Google identity if available.
