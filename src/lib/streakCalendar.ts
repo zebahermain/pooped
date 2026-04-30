@@ -24,7 +24,17 @@ export interface DayCell {
   isFuture: boolean;
 }
 
-const toDateStr = (d: Date) => d.toISOString().slice(0, 10);
+const toDateStr = (d: Date) => {
+  // Use LOCAL date components — calling .toISOString() on a Date built from
+  // (year, month, day) shifts to UTC, which rolls back a day for any
+  // timezone east of UTC (e.g. IST). That mismatched the cell key against
+  // logs (which are keyed off `new Date(now).toISOString()`), so logged
+  // days appeared as "No log" in the Profile calendar.
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+};
 
 export const computeDayCell = (
   date: Date,
