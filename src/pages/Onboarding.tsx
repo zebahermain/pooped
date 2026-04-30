@@ -42,7 +42,7 @@ const freqs: { id: FrequencyPref; label: string }[] = [
  */
 const Onboarding = () => {
   const navigate = useNavigate();
-  const { session, loading } = useAuth();
+  const { session, loading, signOut } = useAuth();
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
   const [name, setName] = useState("");
   const [avatar, setAvatar] = useState<AvatarKey>("avocado");
@@ -103,9 +103,23 @@ const Onboarding = () => {
         goal: profile.goal,
         frequency_pref: profile.frequencyPref,
       });
-      if (error) throw error;
+      if (error) {
+        // 23503 = foreign_key_violation on profiles_id_fkey -> auth.users row
+        // for this session no longer exists (e.g. account was deleted but the
+        // client-side JWT is still cached). Sign out and restart sign-in.
+        if (error.code === "23503") {
+          await signOut();
+          navigate("/auth", { replace: true });
+          return;
+        }
+        throw error;
+      }
 
       navigate("/", { replace: true });
+    } catch (e) {
+      // Generic fallthrough — log and leave the user on this screen so they
+      // can retry Continue. Prevents silent failure with the spinner hung.
+      console.error("Onboarding finish failed:", e);
     } finally {
       setSaving(false);
     }
