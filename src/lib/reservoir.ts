@@ -12,7 +12,7 @@ export interface ReservoirState {
   notified: boolean; // user has seen the "you can launch" dot at least once
 }
 
-export const LAUNCH_THRESHOLD = 10;
+export const LAUNCH_THRESHOLD = 20;
 export const BASE_MAX = 500;
 export const MAX_GROWTH_PER_30_DAYS = 100;
 
