@@ -3,7 +3,19 @@ import { getProfile } from "@/lib/storage";
 import { getReservoirState, getGrade, type ReservoirGrade } from "@/lib/reservoir";
 import { canGuestSendNow, recordGuestSend } from "@/lib/rateLimit";
 
-export type DeliveryStyle = "stealth" | "cannon" | "gentle" | "monsoon";
+export type DeliveryStyle =
+  // Legacy values — kept so historical splats keep rendering.
+  | "stealth"
+  | "cannon"
+  | "gentle"
+  | "monsoon"
+  // New intensity-tier values (1:1 with SendSheet INTENSITY_TIERS).
+  | "drip"
+  | "puff"
+  | "blaze"
+  | "eruption"
+  | "overload"
+  | "apocalypse";
 
 export interface DeliveryStyleMeta {
   id: DeliveryStyle;
@@ -13,6 +25,14 @@ export interface DeliveryStyleMeta {
 }
 
 export const DELIVERY_STYLES: DeliveryStyleMeta[] = [
+  // New intensity tiers (preferred order — low to high).
+  { id: "drip", label: "Drip", emoji: "💧", description: "Just a tease" },
+  { id: "puff", label: "Puff", emoji: "💨", description: "Soft & cheeky" },
+  { id: "blaze", label: "Blaze", emoji: "🔥", description: "Bring the heat" },
+  { id: "eruption", label: "Eruption", emoji: "🌋", description: "Volcanic" },
+  { id: "overload", label: "Overload", emoji: "⚡", description: "Total chaos" },
+  { id: "apocalypse", label: "Apocalypse", emoji: "☠️", description: "Total annihilation" },
+  // Legacy values — kept so historical splats keep rendering.
   { id: "cannon", label: "Cannon Blast", emoji: "💥", description: "Devastating" },
   { id: "monsoon", label: "Monsoon", emoji: "🌧️", description: "Relentless" },
   { id: "stealth", label: "Stealth Drop", emoji: "🤫", description: "Unexpected" },
