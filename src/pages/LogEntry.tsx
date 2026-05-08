@@ -170,7 +170,7 @@ const LogEntry = () => {
                     <span className="text-3xl">{b.emoji}</span>
                     <div className="flex-1">
                       <div className="flex items-center gap-2">
-                        <span className="font-semibold text-foreground text-foreground">Type {type}</span>
+                        <span className="font-semibold text-foreground">Type {type}</span>
                         {b.ideal && (
                           <span className="rounded-full bg-success/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-success">Ideal</span>
                         )}
@@ -304,7 +304,7 @@ const LogEntry = () => {
               </div>
 
               <div className="space-y-3">
-                <h3 className="text-sm font-bold text-foreground text-foreground">Notes</h3>
+                <h3 className="text-sm font-bold text-foreground">Notes</h3>
                 <Textarea
                   value={notes}
                   onChange={(e) => setNotes(e.target.value.slice(0, NOTES_MAX))}
@@ -318,15 +318,15 @@ const LogEntry = () => {
         )}
       </div>
 
-      <div className="fixed inset-x-0 bottom-0 z-50 p-4 pb-8 bg-gradient-to-t from-background via-background/90 to-transparent">
-        <div className="mx-auto w-full max-w-md">
-          {step === 3 && (
+      {step === 3 && (
+        <div className="fixed inset-x-0 bottom-[64px] z-30 p-4 bg-gradient-to-t from-background via-background/90 to-transparent">
+          <div className="mx-auto w-full max-w-md">
             <Button variant="hero" size="xl" className="w-full h-14 font-black" onClick={handleCalculate}>
               Calculate my score →
             </Button>
-          )}
+          </div>
         </div>
-      </div>
+      )}
 
       <HonestyCheck open={honestyOpen} onConfirm={submit} onDeny={handleHonestyDeny} />
     </AppShell>

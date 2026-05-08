@@ -20,12 +20,11 @@ export const BottomNav = () => {
   const location = useLocation();
   const [showDot, setShowDot] = useState(false);
 
-  // Re-evaluate the reservoir notification dot on every route change so it
-  // appears immediately after a log fills past the threshold and disappears
-  // after the user opens the Reservoir tab.
   useEffect(() => {
-    const state = getReservoirState();
-    setShowDot(state.units >= LAUNCH_THRESHOLD && !hasSeenLaunchDot());
+    try {
+      const state = getReservoirState();
+      setShowDot(state.units >= LAUNCH_THRESHOLD && !hasSeenLaunchDot());
+    } catch (e) {}
   }, [location.pathname]);
 
   if (
@@ -39,8 +38,8 @@ export const BottomNav = () => {
   }
 
   return (
-    <nav className="fixed bottom-0 left-1/2 z-40 w-full max-w-md -translate-x-1/2 border-t border-border bg-card/90 backdrop-blur-lg">
-      <div className="flex items-center justify-around px-2 py-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
+    <nav className="fixed bottom-0 left-1/2 z-40 w-full max-w-md -translate-x-1/2 border-t border-border bg-card/95 backdrop-blur-xl ring-1 ring-black/5">
+      <div className="flex items-center justify-around px-2 py-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)]">
         {tabs.map((tab) => {
           const { to, label } = tab;
           const Icon = "icon" in tab ? tab.icon : null;
@@ -53,7 +52,7 @@ export const BottomNav = () => {
               end={to === "/"}
               className={({ isActive }) =>
                 cn(
-                  "relative flex flex-1 flex-col items-center gap-1 rounded-xl py-2 text-xs font-medium transition-bounce",
+                  "relative flex flex-1 flex-col items-center gap-1.5 rounded-xl py-1 text-[10px] font-bold uppercase tracking-tight transition-all active:scale-90",
                   isActive ? "text-primary" : "text-muted-foreground hover:text-foreground"
                 )
               }
@@ -62,23 +61,23 @@ export const BottomNav = () => {
                 <>
                   {Icon ? (
                     <Icon
-                      className={cn("transition-bounce", isActive ? "h-6 w-6" : "h-5 w-5")}
-                      strokeWidth={isActive ? 2.5 : 2}
+                      className={cn("transition-transform", isActive ? "h-6 w-6 scale-110" : "h-5 w-5")}
+                      strokeWidth={isActive ? 3 : 2}
                     />
                   ) : (
                     <span
                       className={cn(
-                        "leading-none transition-bounce",
-                        isActive ? "text-2xl" : "text-xl"
+                        "leading-none transition-transform",
+                        isActive ? "text-2xl scale-110" : "text-xl"
                       )}
                       aria-hidden
                     >
                       {emoji}
                     </span>
                   )}
-                  <span>{label}</span>
+                  <span className="leading-none">{label}</span>
                   {isReservoir && showDot && (
-                    <span className="absolute right-3 top-1 h-2.5 w-2.5 rounded-full bg-danger ring-2 ring-card" />
+                    <span className="absolute right-1/4 top-0.5 h-2 w-2 rounded-full bg-destructive ring-2 ring-card animate-pulse" />
                   )}
                 </>
               )}
