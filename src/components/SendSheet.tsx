@@ -55,14 +55,11 @@ export const SendSheet = ({
   const [resultSplat, setResultSplat] = useState<Splat | null>(null);
   const [sharing, setSharing] = useState(false);
 
-  // displayPct: mapping actual units in range [MIN_UNITS, reservoirUnits] to [0, 1] for visual display
   const displayPct = useMemo(() => {
     const range = reservoirUnits - MIN_UNITS;
     return range > 0 ? (units - MIN_UNITS) / range : 0;
   }, [units, reservoirUnits]);
 
-  // currentStop: find the tier based on the visual thumb position (displayPct)
-  // this ensures that the label always matches the slider position regardless of total stock.
   const currentStop = useMemo(() => {
     return [...ALL_STOPS].reverse().find((s) => displayPct >= s.pct - 0.01) ?? ALL_STOPS[0];
   }, [displayPct]);
@@ -263,7 +260,7 @@ function ScalePicker({
     const el = trackRef.current;
     if (!el) return;
     const r = el.getBoundingClientRect();
-    const padding = 16;
+    const padding = 20; // Enough padding to keep thumb from being cut off
     const innerWidth = r.width - padding * 2;
     const relativeX = clientX - r.left - padding;
     const ratio = Math.max(0, Math.min(1, relativeX / innerWidth));
@@ -323,18 +320,20 @@ function ScalePicker({
             setDragging(true);
             setFromClientX(e.clientX);
           }}
-          className="relative h-16 rounded-2xl bg-muted/50 cursor-pointer touch-none overflow-hidden px-4"
+          className="relative h-16 rounded-2xl bg-muted/50 cursor-pointer touch-none overflow-hidden"
         >
+          {/* Fill width now accounts for the full track when displayPct is 1 */}
           <div
             className="absolute inset-y-0 left-0 transition-[width] duration-75"
             style={{
-              width: `calc(16px + ${displayPct} * (100% - 32px))`,
+              width: displayPct === 1 ? '100%' : `calc(20px + ${displayPct} * (100% - 40px))`,
               background: "var(--gradient-primary)",
               boxShadow: "var(--shadow-glow)",
             }}
           />
           
-          <div className="absolute inset-0 px-4 flex justify-between items-center pointer-events-none">
+          {/* Positions markers slightly away from the absolute edges so they stay visible */}
+          <div className="absolute inset-0 px-6 flex justify-between items-center pointer-events-none">
             {ALL_STOPS.map((s) => (
               <div
                 key={s.label}
@@ -348,7 +347,7 @@ function ScalePicker({
           <div
             className="absolute top-1/2 size-10 rounded-full bg-background border-4 border-primary shadow-xl flex items-center justify-center transition-transform pointer-events-none"
             style={{
-              left: `calc(16px + ${displayPct} * (100% - 32px))`,
+              left: `calc(20px + ${displayPct} * (100% - 40px))`,
               transform: `translate(-50%, -50%) scale(${dragging ? 1.15 : 1})`,
             }}
           >
