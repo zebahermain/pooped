@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { X } from "lucide-react";
+import { X, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AppShell } from "@/components/AppShell";
 import { GutScoreRing } from "@/components/GutScoreRing";
@@ -22,16 +22,12 @@ import {
   hasSuspiciousPattern,
   markSuspiciousNudgeSeen,
 } from "@/lib/honesty";
-import {
-  getConsecutiveNoMovementDays,
-} from "@/lib/noMovement";
 
 const Home = () => {
   const navigate = useNavigate();
   const { session, loading } = useAuth();
   const [score, setScore] = useState(0);
   const [profile, setProfile] = useState(getProfile());
-  const [firstFillOpen, setFirstFillOpen] = useState(false);
   const [showSuspiciousNudge, setShowSuspiciousNudge] = useState(false);
   const [showGuestBanner, setShowGuestBanner] = useState(false);
 
@@ -47,7 +43,6 @@ const Home = () => {
 
     const r = getReservoirState();
     if (r.units > 0 && getLogs().length >= 1 && !hasSeenFirstFill()) {
-      setFirstFillOpen(true);
       markFirstFillSeen();
     }
 
@@ -75,7 +70,7 @@ const Home = () => {
   return (
     <AppShell>
       {showGuestBanner && (
-        <div className="mb-4 relative rounded-xl border border-border bg-card p-4 animate-in fade-in slide-in-from-top-2">
+        <div className="mb-6 relative rounded-2xl border border-border bg-card p-4 animate-in fade-in slide-in-from-top-2">
           <button 
             onClick={() => {
               setShowGuestBanner(false);
@@ -94,47 +89,55 @@ const Home = () => {
         </div>
       )}
 
-      <header className="mb-2">
-        <p className="text-sm text-muted-foreground font-medium">Welcome back</p>
-        <h1 className="text-2xl font-black text-foreground">
-          Hey {profile.name}
+      <header className="mb-10">
+        <p className="text-[10px] font-black uppercase tracking-[0.25em] text-muted-foreground">
+          Welcome back
+        </p>
+        <h1 className="text-3xl font-black tracking-tight text-foreground mt-1">
+          {profile.name}
         </h1>
       </header>
 
-      <section className="mt-6 flex flex-col items-center">
+      <section className="flex flex-col items-center">
         <GutScoreRing score={score} />
       </section>
 
       <StreakStrip />
 
       {showSuspiciousNudge && (
-        <div className="mt-6 flex items-start gap-3 rounded-2xl border border-warning/40 bg-warning/10 p-4">
+        <div className="mt-8 flex items-start gap-3 rounded-3xl border border-warning/20 bg-warning/5 p-5 animate-in fade-in">
           <div className="text-2xl">🙏</div>
           <div className="flex-1">
-            <p className="text-sm font-semibold text-foreground text-foreground">Heads up</p>
-            <p className="mt-1 text-sm text-muted-foreground">
+            <p className="text-sm font-black text-foreground">Heads up</p>
+            <p className="mt-1 text-xs font-medium text-muted-foreground leading-relaxed">
               Logging more than 3 times daily can skew your Gut Score.
             </p>
           </div>
           <button
             onClick={dismissSuspiciousNudge}
-            className="shrink-0 rounded-full px-2 text-lg text-muted-foreground hover:text-foreground"
+            className="shrink-0 rounded-full h-8 w-8 flex items-center justify-center text-muted-foreground hover:text-foreground"
           >
             ✕
           </button>
         </div>
       )}
 
-      <DailyChallengeCard />
+      <div className="mt-8">
+        <DailyChallengeCard />
+      </div>
 
-      <Button
-        variant="hero"
-        size="xl"
-        className="mt-6 w-full h-14 font-black text-lg"
-        onClick={() => navigate("/log")}
-      >
-        Log a poop 💩
-      </Button>
+      <div className="mt-10 pb-10">
+        <Button
+          variant="hero"
+          size="xl"
+          className="w-full h-16 font-black text-lg rounded-[22px] gap-2 shadow-[var(--shadow-glow)]"
+          style={{ background: "var(--gradient-primary)" }}
+          onClick={() => navigate("/log")}
+        >
+          <Plus className="size-5" strokeWidth={3} />
+          Log a poop 💩
+        </Button>
+      </div>
     </AppShell>
   );
 };

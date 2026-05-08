@@ -1,19 +1,12 @@
 import { useMemo } from "react";
-import { getStreakData, getLogs, type PoopLog } from "@/lib/storage";
-import { Check, Trophy } from "lucide-react";
+import { getStreakData, getLogs } from "@/lib/storage";
+import { Flame, Trophy } from "lucide-react";
 
 const toDateStr = (d: Date) => {
   const year = d.getFullYear();
   const month = String(d.getMonth() + 1).padStart(2, '0');
   const day = String(d.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
-};
-
-const getDayColor = (avgScore: number | null) => {
-  if (avgScore === null) return null;
-  if (avgScore >= 70) return { bg: "bg-[#14532D]", text: "text-[#86EFAC]" };
-  if (avgScore >= 40) return { bg: "bg-[#78350F]", text: "text-[#FCD34D]" };
-  return { bg: "bg-[#451A03]", text: "text-[#FDE68A]" };
 };
 
 export const StreakStrip = () => {
@@ -37,109 +30,90 @@ export const StreakStrip = () => {
       d.setDate(startOfWeek.getDate() + i);
       const ds = toDateStr(d);
       const dayLogs = logs.filter(l => toDateStr(new Date(l.timestamp)) === ds);
-      const avgScore = dayLogs.length 
-        ? Math.round(dayLogs.reduce((s, l) => s + l.gutScore, 0) / dayLogs.length) 
-        : null;
       
       days.push({
         date: ds,
         label: labels[i],
-        avgScore,
+        hasLog: dayLogs.length > 0,
         isToday: ds === todayStr,
         isFuture: ds > todayStr,
-        isSunday: i === 6
       });
     }
     return days;
   }, [logs, todayStr]);
 
-  const nextMilestone = streak < 7 ? 7 : streak < 14 ? 14 : 30;
-  const milestoneIcon = nextMilestone === 7 ? "🏆" : nextMilestone === 14 ? "💎" : "👑";
-  
-  const subtitle = streak === 0 ? "Start today 💪" : streak < 7 ? "Keep it going!" : "You're on fire 🔥";
-
-  const loggedDaysThisWeek = weekData.filter(d => !d.isFuture && d.avgScore !== null).length;
-  const isRewardEarned = weekData[6].avgScore !== null;
-  
-  const isFridayOrSaturday = today.getDay() === 5 || today.getDay() === 6;
-  const showUrgency = isFridayOrSaturday && !isRewardEarned;
+  const loggedDaysThisWeek = weekData.filter(d => d.hasLog).length;
+  const progressPct = Math.min(100, (loggedDaysThisWeek / 7) * 100);
 
   return (
-    <div className="mt-8 w-full space-y-4" data-testid="streak-redesign">
-      <div className="flex items-center justify-between">
+    <section className="mt-8 rounded-[32px] border border-border bg-card p-6 relative overflow-hidden shadow-sm">
+      <div
+        className="absolute -top-16 -right-16 size-48 rounded-full opacity-20 blur-3xl pointer-events-none"
+        style={{ background: "var(--gradient-primary)" }}
+      />
+      
+      <div className="relative flex items-start justify-between gap-3 mb-6">
         <div>
-          <h2 className="text-[20px] font-bold text-foreground">🔥 {streak} day streak</h2>
-          <p className="text-sm text-muted-foreground">{subtitle}</p>
-        </div>
-        <div className="rounded-full bg-muted/50 px-3 py-1 text-xs font-bold text-foreground flex items-center gap-1">
-          {nextMilestone} days {milestoneIcon}
-        </div>
-      </div>
-
-      <div className="grid grid-cols-7 gap-2">
-        {weekData.map((d) => {
-          const color = getDayColor(d.avgScore);
-          return (
-            <div key={d.date} className="flex flex-col items-center gap-1.5">
-              <span className={`text-[9px] ${d.isToday ? "font-bold text-amber-500" : "text-muted-foreground"}`}>
-                {d.label}
-              </span>
-              <div 
-                className={`relative aspect-square w-full rounded-[10px] flex items-center justify-center
-                  ${d.isFuture ? "bg-[#1A1A1A]" : ""}
-                  ${!d.isFuture && d.avgScore === null && !d.isToday ? "bg-[#1A1A1A]" : ""}
-                  ${d.isToday && d.avgScore === null ? "bg-transparent border-dashed border-[#D97706] border-2 animate-pulse" : ""}
-                  ${color ? color.bg : ""}
-                `}
-              >
-                {d.isToday && d.avgScore === null && (
-                  <span className="text-sm">💩</span>
-                )}
-                {color && (
-                  <Check className={`h-4 w-4 ${color.text}`} strokeWidth={3} />
-                )}
-                {d.isSunday && d.avgScore === null && !d.isFuture && !d.isToday && (
-                  <div className="flex h-full w-full items-center justify-center rounded-[10px] bg-[#1C1400] border-dashed border-[#78350F] border">
-                    <span className="text-sm">🎁</span>
-                  </div>
-                )}
-                {d.isSunday && color && (
-                  <div className="flex h-full w-full items-center justify-center rounded-[10px] bg-[#14532D]">
-                    <Trophy className="h-4 w-4 text-[#86EFAC]" />
-                  </div>
-                )}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      {isRewardEarned ? (
-        <div className="rounded-xl border border-[#15803D] bg-[#052E16] p-3 flex items-center gap-3">
-          <span className="text-xl">🏆</span>
-          <p className="text-sm font-medium text-white">
-            Weekly reward unlocked! +100 💩 units added
+          <div className="flex items-center gap-2">
+            <Flame className="size-5 text-primary" fill="currentColor" />
+            <span className="text-xl font-black tracking-tight">
+              {streak} day streak
+            </span>
+          </div>
+          <p className="text-xs font-bold text-muted-foreground mt-1">
+            Keep the fire burning
           </p>
         </div>
-      ) : (
-        <div className={`flex items-center gap-2 ${showUrgency ? "rounded-xl border border-[#D97706] p-1" : ""}`}>
-          <div className="flex flex-1 gap-1">
-            {[...Array(7)].map((_, i) => (
-              <div 
-                key={i} 
-                className={`h-[5px] flex-1 rounded-full ${i < loggedDaysThisWeek ? "bg-[#D97706]" : "bg-[#1F1208]"}`} 
-              />
-            ))}
-          </div>
-          <div className="relative flex h-[26px] w-[26px] items-center justify-center rounded-full bg-[#78350F] border border-dashed border-amber-500/50 animate-pulse">
-            <span className="text-[12px]">🎁</span>
-          </div>
-          <div className="ml-2 text-right">
-            <div className="text-[16px] font-bold text-amber-500 leading-none">+100</div>
-            <div className="text-[9px] text-muted-foreground leading-none">💩 units</div>
-          </div>
+        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-muted text-[10px] font-black uppercase tracking-wider text-foreground">
+          <Trophy className="size-3.5 text-primary" />
+          7 days
         </div>
-      )}
-    </div>
+      </div>
+
+      <div className="grid grid-cols-7 gap-2 mb-6">
+        {weekData.map((d) => (
+          <div key={d.date} className="flex flex-col items-center gap-2">
+            <span className={`text-[10px] font-black uppercase tracking-wider ${d.isToday ? "text-primary" : "text-muted-foreground/60"}`}>
+              {d.label}
+            </span>
+            <div
+              className={`size-9 rounded-xl flex items-center justify-center text-sm font-bold transition-all ${
+                d.hasLog
+                  ? "bg-emerald-500 text-white"
+                  : d.isToday
+                    ? "text-primary-foreground shadow-[var(--shadow-glow)]"
+                    : "border border-dashed border-border text-muted-foreground/20"
+              }`}
+              style={
+                d.isToday && !d.hasLog
+                  ? { background: "var(--gradient-primary)" }
+                  : undefined
+              }
+            >
+              {d.hasLog ? "✓" : d.isToday ? "•" : ""}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="flex items-center gap-3">
+        <div className="flex-1 h-3 rounded-full bg-muted overflow-hidden relative">
+          <div
+            className="h-full rounded-full transition-all duration-700 ease-out"
+            style={{
+              width: `${progressPct}%`,
+              background: "var(--gradient-primary)",
+              boxShadow: "var(--shadow-glow)",
+            }}
+          />
+        </div>
+        <div className="flex items-center gap-1 text-sm font-black text-primary whitespace-nowrap">
+          💩 +100
+          <span className="text-[10px] text-muted-foreground font-black uppercase tracking-widest ml-0.5">
+            units
+          </span>
+        </div>
+      </div>
+    </section>
   );
 };
