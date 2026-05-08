@@ -32,9 +32,9 @@ type Stop = { pct: number; emoji: string; label: string; vibe: string; style: De
 
 const MIN_UNITS = 20;
 
-// Removed "Blaze" (fire emoji) as requested to simplify to 5 tiers.
+// The 5 visual intensity levels
 const ALL_STOPS: Stop[] = [
-  { pct: 0.05, emoji: "💧", label: "Drip", vibe: "just a tickle", style: "drip" },
+  { pct: 0, emoji: "💧", label: "Drip", vibe: "just a tickle", style: "drip" },
   { pct: 0.25, emoji: "💨", label: "Puff", vibe: "warming up", style: "puff" },
   { pct: 0.5, emoji: "🌋", label: "Eruption", vibe: "this is gonna hurt", style: "eruption" },
   { pct: 0.75, emoji: "⚡", label: "Overload", vibe: "full carnage", style: "overload" },
@@ -55,17 +55,17 @@ export const SendSheet = ({
   const [resultSplat, setResultSplat] = useState<Splat | null>(null);
   const [sharing, setSharing] = useState(false);
 
-  const stops = useMemo(() => ALL_STOPS, []);
-  
-  // displayPct: 0 is MIN_UNITS, 1 is reservoirUnits
-  const displayPct = reservoirUnits > MIN_UNITS 
-    ? (units - MIN_UNITS) / (reservoirUnits - MIN_UNITS) 
-    : 0;
-
-  const currentStop = useMemo(() => {
-    const unitPct = reservoirUnits > 0 ? units / reservoirUnits : 0;
-    return [...ALL_STOPS].reverse().find((s) => unitPct >= s.pct - 0.01) ?? ALL_STOPS[0];
+  // displayPct: mapping actual units in range [MIN_UNITS, reservoirUnits] to [0, 1] for visual display
+  const displayPct = useMemo(() => {
+    const range = reservoirUnits - MIN_UNITS;
+    return range > 0 ? (units - MIN_UNITS) / range : 0;
   }, [units, reservoirUnits]);
+
+  // currentStop: find the tier based on the visual thumb position (displayPct)
+  // this ensures that the label always matches the slider position regardless of total stock.
+  const currentStop = useMemo(() => {
+    return [...ALL_STOPS].reverse().find((s) => displayPct >= s.pct - 0.01) ?? ALL_STOPS[0];
+  }, [displayPct]);
 
   useEffect(() => {
     if (!open) {
@@ -84,9 +84,8 @@ export const SendSheet = ({
     if (launching) return;
     setLaunching(true);
     try {
-      // Complete removal of recipient name references
       const splat = await createSplat({
-        recipient_name: "Friend", // Placeholder for DB non-null constraint
+        recipient_name: "Friend",
         units: units,
         style: currentStop.style,
       });
@@ -116,7 +115,6 @@ export const SendSheet = ({
     const shortUrl = `${window.location.origin}/splat/${shortId}`;
     const grade = getGrade(resultSplat.units);
     
-    // Updated to not use recipient name in templates
     const text = getRandomShareText({
       sender: resolvedSenderName,
       units: resultSplat.units,
@@ -173,7 +171,6 @@ export const SendSheet = ({
               <ScalePicker 
                 units={units} 
                 setUnits={setUnits} 
-                stops={stops} 
                 stock={reservoirUnits} 
                 currentStop={currentStop}
                 displayPct={displayPct}
@@ -249,14 +246,12 @@ export const SendSheet = ({
 function ScalePicker({
   units,
   setUnits,
-  stops,
   stock,
   currentStop,
   displayPct,
 }: {
   units: number;
   setUnits: (u: number) => void;
-  stops: Stop[];
   stock: number;
   currentStop: Stop;
   displayPct: number;
@@ -268,7 +263,6 @@ function ScalePicker({
     const el = trackRef.current;
     if (!el) return;
     const r = el.getBoundingClientRect();
-    // Added 16px of visual padding to the calculation so thumb doesn't hit edge
     const padding = 16;
     const innerWidth = r.width - padding * 2;
     const relativeX = clientX - r.left - padding;
@@ -297,8 +291,6 @@ function ScalePicker({
     return [MIN_UNITS, Math.round(MIN_UNITS + step), Math.round(MIN_UNITS + step * 2), stock];
   }, [stock]);
 
-  const unitPct = stock > 0 ? units / stock : 0;
-
   return (
     <div className="flex flex-col gap-6">
       <div className="rounded-3xl border border-border bg-card p-6 text-center relative overflow-hidden shadow-sm">
@@ -309,13 +301,13 @@ function ScalePicker({
         <div className="relative">
           <div
             className="text-6xl mb-2 transition-transform duration-200"
-            style={{ transform: `scale(${0.9 + unitPct * 0.4})` }}
+            style={{ transform: `scale(${0.9 + displayPct * 0.4})` }}
           >
             {currentStop.emoji}
           </div>
           <div className="text-5xl font-black tabular-nums tracking-tight text-foreground">{units}</div>
           <div className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground mt-1">
-            units · {Math.round(unitPct * 100)}% of stock
+            units · {Math.round((units/stock) * 100)}% of stock
           </div>
           <div className="mt-3 inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/15 text-primary text-[10px] font-black uppercase tracking-wider">
             {currentStop.label} — {currentStop.vibe}
@@ -333,33 +325,26 @@ function ScalePicker({
           }}
           className="relative h-16 rounded-2xl bg-muted/50 cursor-pointer touch-none overflow-hidden px-4"
         >
-          {/* Track fill */}
           <div
             className="absolute inset-y-0 left-0 transition-[width] duration-75"
             style={{
-              // Adjust fill width to account for padding
               width: `calc(16px + ${displayPct} * (100% - 32px))`,
               background: "var(--gradient-primary)",
               boxShadow: "var(--shadow-glow)",
             }}
           />
           
-          {/* Markers */}
           <div className="absolute inset-0 px-4 flex justify-between items-center pointer-events-none">
-            {stops.map((s, i) => {
-              const visualPct = i / (stops.length - 1);
-              return (
-                <div
-                  key={s.label}
-                  className={`text-base leading-none transition-opacity duration-200 ${displayPct >= visualPct - 0.01 ? "opacity-100" : "opacity-30"}`}
-                >
-                  {s.emoji}
-                </div>
-              );
-            })}
+            {ALL_STOPS.map((s) => (
+              <div
+                key={s.label}
+                className={`text-base leading-none transition-opacity duration-200 ${displayPct >= s.pct - 0.01 ? "opacity-100" : "opacity-30"}`}
+              >
+                {s.emoji}
+              </div>
+            ))}
           </div>
 
-          {/* Thumb */}
           <div
             className="absolute top-1/2 size-10 rounded-full bg-background border-4 border-primary shadow-xl flex items-center justify-center transition-transform pointer-events-none"
             style={{
@@ -371,8 +356,8 @@ function ScalePicker({
           </div>
         </div>
         <div className="flex justify-between text-[10px] font-black uppercase tracking-wider text-muted-foreground mt-3 px-1">
-          <span>{stops[0].label}</span>
-          <span>{stops[stops.length - 1].label}</span>
+          <span>DRIP</span>
+          <span>APOCALYPSE</span>
         </div>
       </div>
 
