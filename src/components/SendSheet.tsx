@@ -43,19 +43,10 @@ const ALL_STOPS: Stop[] = [
 
 function getScaleStops(stock: number): Stop[] {
   if (stock < MIN_UNITS) return [];
-  const maxByStock = Math.min(6, Math.max(2, Math.floor(stock / MIN_UNITS)));
-  if (maxByStock >= ALL_STOPS.length) return ALL_STOPS;
-  const picks: Stop[] = [ALL_STOPS[0]];
-  const middleCount = maxByStock - 2;
-  if (middleCount > 0) {
-    const middle = ALL_STOPS.slice(1, -1);
-    const step = middle.length / (middleCount + 1);
-    for (let i = 1; i <= middleCount; i++) {
-      picks.push(middle[Math.round(i * step) - 1] ?? middle[i - 1]);
-    }
-  }
-  picks.push(ALL_STOPS[ALL_STOPS.length - 1]);
-  return picks;
+  // For the visual markers, we always want the 6 core stages if possible,
+  // or at least 4. Let's just use the ALL_STOPS and the ScalePicker will
+  // handle the visual distribution.
+  return ALL_STOPS;
 }
 
 export const SendSheet = ({
@@ -73,8 +64,16 @@ export const SendSheet = ({
   const [sharing, setSharing] = useState(false);
 
   const stops = useMemo(() => getScaleStops(reservoirUnits), [reservoirUnits]);
-  const pct = reservoirUnits > 0 ? units / reservoirUnits : 0;
-  const currentStop = [...stops].reverse().find((s) => pct >= s.pct - 0.0001) ?? (stops[0] || ALL_STOPS[0]);
+  
+  // displayPct: 0 is MIN_UNITS, 1 is reservoirUnits
+  const displayPct = reservoirUnits > MIN_UNITS 
+    ? (units - MIN_UNITS) / (reservoirUnits - MIN_UNITS) 
+    : 0;
+
+  const currentStop = useMemo(() => {
+    const unitPct = reservoirUnits > 0 ? units / reservoirUnits : 0;
+    return [...ALL_STOPS].reverse().find((s) => unitPct >= s.pct - 0.01) ?? ALL_STOPS[0];
+  }, [units, reservoirUnits]);
 
   useEffect(() => {
     if (!open) {
@@ -183,7 +182,7 @@ export const SendSheet = ({
                 stops={stops} 
                 stock={reservoirUnits} 
                 currentStop={currentStop}
-                pct={pct}
+                displayPct={displayPct}
               />
 
               <div className="mt-4">
@@ -202,6 +201,7 @@ export const SendSheet = ({
             </div>
           ) : (
             <div className="animate-in fade-in slide-in-from-bottom-4 duration-300">
+              {/* Result state unchanged */}
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => {
@@ -220,41 +220,23 @@ export const SendSheet = ({
               <p className="mt-1 text-sm font-medium text-muted-foreground">
                 The link is generated. Send it now.
               </p>
-
               <div className="mt-8 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60">
                 Send via
               </div>
-
               <div className="mt-4 flex justify-between gap-6 px-2">
-                <button
-                  onClick={() => handleSharePick("whatsapp")}
-                  disabled={sharing}
-                  className="group flex flex-col items-center gap-3 transition-transform active:scale-90 disabled:opacity-50"
-                >
+                <button onClick={() => handleSharePick("whatsapp")} disabled={sharing} className="group flex flex-col items-center gap-3 transition-transform active:scale-90 disabled:opacity-50">
                   <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[#25D366] text-white shadow-lg transition-all group-hover:scale-110">
-                    <svg className="h-8 w-8 fill-current" viewBox="0 0 24 24">
-                      <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.353-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L0 24l6.335-1.662c1.72.94 3.659 1.437 5.634 1.437h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
-                    </svg>
+                    <svg className="h-8 w-8 fill-current" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.353-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L0 24l6.335-1.662c1.72.94 3.659 1.437 5.634 1.437h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" /></svg>
                   </div>
                   <span className="text-[11px] font-bold text-foreground">WhatsApp</span>
                 </button>
-
-                <button
-                  onClick={() => handleSharePick("copy")}
-                  disabled={sharing}
-                  className="group flex flex-col items-center gap-3 transition-transform active:scale-90 disabled:opacity-50"
-                >
+                <button onClick={() => handleSharePick("copy")} disabled={sharing} className="group flex flex-col items-center gap-3 transition-transform active:scale-90 disabled:opacity-50">
                   <div className="flex h-16 w-16 items-center justify-center rounded-full bg-muted/40 text-foreground shadow-md transition-all group-hover:scale-110 group-hover:bg-muted/60">
                     <Copy className="h-7 w-7" />
                   </div>
                   <span className="text-[11px] font-bold text-foreground">Copy link</span>
                 </button>
-
-                <button
-                  onClick={() => handleSharePick("share")}
-                  disabled={sharing}
-                  className="group flex flex-col items-center gap-3 transition-transform active:scale-90 disabled:opacity-50"
-                >
+                <button onClick={() => handleSharePick("share")} disabled={sharing} className="group flex flex-col items-center gap-3 transition-transform active:scale-90 disabled:opacity-50">
                   <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg transition-all group-hover:scale-110">
                     <Share2 className="h-7 w-7" strokeWidth={3} />
                   </div>
@@ -275,14 +257,14 @@ function ScalePicker({
   stops,
   stock,
   currentStop,
-  pct,
+  displayPct,
 }: {
   units: number;
   setUnits: (u: number) => void;
   stops: Stop[];
   stock: number;
   currentStop: Stop;
-  pct: number;
+  displayPct: number;
 }) {
   const trackRef = useRef<HTMLDivElement>(null);
   const [dragging, setDragging] = useState(false);
@@ -292,7 +274,9 @@ function ScalePicker({
     if (!el) return;
     const r = el.getBoundingClientRect();
     const ratio = Math.max(0, Math.min(1, (clientX - r.left) / r.width));
-    setUnits(Math.max(MIN_UNITS, Math.round(ratio * stock)));
+    // Linearly map the visual ratio to the unit range [MIN_UNITS, stock]
+    const val = MIN_UNITS + ratio * (stock - MIN_UNITS);
+    setUnits(Math.round(val));
   };
 
   useEffect(() => {
@@ -307,11 +291,22 @@ function ScalePicker({
     };
   }, [dragging]);
 
-  const chipValues = (() => {
+  // Chip logic: if stock is high, use user's 100/250. 
+  // If low, use clean increments (e.g. multiples of 25 or just even steps).
+  const chipValues = useMemo(() => {
     if (stock >= 500) return [MIN_UNITS, 100, 250, stock];
-    if (stock >= 200) return [MIN_UNITS, Math.round(stock * 0.25), Math.round(stock * 0.5), stock];
-    return [MIN_UNITS, Math.round(stock * 0.33), Math.round(stock * 0.66), stock];
-  })();
+    if (stock >= 200) return [MIN_UNITS, 50, 150, stock];
+    // If very low, just use even quarters
+    const step = (stock - MIN_UNITS) / 3;
+    return [
+      MIN_UNITS, 
+      Math.round(MIN_UNITS + step), 
+      Math.round(MIN_UNITS + step * 2), 
+      stock
+    ];
+  }, [stock]);
+
+  const unitPct = stock > 0 ? units / stock : 0;
 
   return (
     <div className="flex flex-col gap-6">
@@ -323,13 +318,13 @@ function ScalePicker({
         <div className="relative">
           <div
             className="text-6xl mb-2 transition-transform duration-200"
-            style={{ transform: `scale(${0.9 + pct * 0.4})` }}
+            style={{ transform: `scale(${0.9 + unitPct * 0.4})` }}
           >
             {currentStop.emoji}
           </div>
           <div className="text-5xl font-black tabular-nums tracking-tight text-foreground">{units}</div>
           <div className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground mt-1">
-            units · {Math.round(pct * 100)}% of stock
+            units · {Math.round(unitPct * 100)}% of stock
           </div>
           <div className="mt-3 inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/15 text-primary text-[10px] font-black uppercase tracking-wider">
             {currentStop.label} — {currentStop.vibe}
@@ -350,31 +345,35 @@ function ScalePicker({
           <div
             className="absolute inset-y-0 left-0 transition-[width] duration-75"
             style={{
-              width: `${pct * 100}%`,
+              width: `${displayPct * 100}%`,
               background: "var(--gradient-primary)",
               boxShadow: "var(--shadow-glow)",
             }}
           />
-          {stops.map((s) => (
-            <button
-              key={s.pct}
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                setUnits(Math.max(MIN_UNITS, Math.round(s.pct * stock)));
-              }}
-              className="absolute top-0 bottom-0 -translate-x-1/2 flex flex-col items-center justify-center text-xs"
-              style={{ left: `${s.pct * 100}%` }}
-            >
-              <span className={`text-base leading-none ${pct >= s.pct - 0.01 ? "opacity-100" : "opacity-30"}`}>
-                {s.emoji}
-              </span>
-            </button>
-          ))}
+          {/* Evenly space the markers across the width of the track */}
+          {stops.map((s, i) => {
+            const visualPct = i / (stops.length - 1);
+            return (
+              <button
+                key={s.label}
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setUnits(Math.max(MIN_UNITS, Math.round(s.pct * stock)));
+                }}
+                className="absolute top-0 bottom-0 -translate-x-1/2 flex flex-col items-center justify-center text-xs pointer-events-none"
+                style={{ left: `${visualPct * 100}%` }}
+              >
+                <span className={`text-base leading-none transition-opacity ${displayPct >= visualPct - 0.01 ? "opacity-100" : "opacity-30"}`}>
+                  {s.emoji}
+                </span>
+              </button>
+            );
+          })}
           <div
-            className="absolute top-1/2 size-10 rounded-full bg-background border-4 border-primary shadow-xl flex items-center justify-center transition-transform"
+            className="absolute top-1/2 size-10 rounded-full bg-background border-4 border-primary shadow-xl flex items-center justify-center transition-transform pointer-events-none"
             style={{
-              left: `${pct * 100}%`,
+              left: `${displayPct * 100}%`,
               transform: `translate(-50%, -50%) scale(${dragging ? 1.15 : 1})`,
             }}
           >
