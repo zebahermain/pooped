@@ -202,7 +202,7 @@ const SplatPage = () => {
 
           <div className="relative z-[7] mt-24 text-center animate-fade-in">
             <p className="text-4xl font-extrabold tracking-tight text-white">
-              Hey Friend…
+              Hello Friend…
             </p>
           </div>
 
