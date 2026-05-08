@@ -79,8 +79,8 @@ const SplatPage = () => {
         else {
           setSplat(s);
           const grade = getGrade(s.units);
-          const sender = s.sender_name || "Someone";
-          const title = `${sender} just hit ${s.recipient_name} with ${s.units} units 💩`;
+          const sender = s.sender_name || "Friend";
+          const title = `${sender} just hit you with ${s.units} units 💩`;
           const description = "Open to see the damage and retaliate";
           
           const ogImages: Record<string, string> = {
@@ -154,7 +154,7 @@ const SplatPage = () => {
 
   const styleMeta = getDeliveryStyleMeta(splat.style);
   const grade = getGrade(splat.units);
-  const sender = splat.sender_name || "Someone";
+  const sender = splat.sender_name || "Friend";
   
   const headlines: Record<string, string> = {
     cannon: `💥 ${sender} just CANNON BLASTED you`,
@@ -202,7 +202,7 @@ const SplatPage = () => {
 
           <div className="relative z-[7] mt-24 text-center animate-fade-in">
             <p className="text-4xl font-extrabold tracking-tight text-white">
-              Hey {splat.recipient_name}…
+              Hey Friend…
             </p>
           </div>
 

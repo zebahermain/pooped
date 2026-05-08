@@ -78,7 +78,7 @@ export const SendSheet = ({
   }, [open, reservoirUnits]);
 
   const profile = useMemo(() => getProfile(), []);
-  const resolvedSenderName = profile?.name || "Someone";
+  const resolvedSenderName = profile?.name || "Friend";
 
   const handleLaunch = async () => {
     if (launching) return;
@@ -86,7 +86,7 @@ export const SendSheet = ({
     try {
       // Complete removal of recipient name references
       const splat = await createSplat({
-        recipient_name: "Someone", // Placeholder for DB non-null constraint
+        recipient_name: "Friend", // Placeholder for DB non-null constraint
         units: units,
         style: currentStop.style,
       });
