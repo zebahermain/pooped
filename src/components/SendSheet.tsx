@@ -32,22 +32,14 @@ type Stop = { pct: number; emoji: string; label: string; vibe: string; style: De
 
 const MIN_UNITS = 20;
 
+// Removed "Blaze" (fire emoji) as requested to simplify to 5 tiers.
 const ALL_STOPS: Stop[] = [
   { pct: 0.05, emoji: "💧", label: "Drip", vibe: "just a tickle", style: "drip" },
-  { pct: 0.2, emoji: "💨", label: "Puff", vibe: "warming up", style: "puff" },
-  { pct: 0.4, emoji: "🔥", label: "Blaze", vibe: "now we're talking", style: "blaze" },
-  { pct: 0.65, emoji: "🌋", label: "Eruption", vibe: "this is gonna hurt", style: "eruption" },
-  { pct: 0.85, emoji: "⚡", label: "Overload", vibe: "full carnage", style: "overload" },
+  { pct: 0.25, emoji: "💨", label: "Puff", vibe: "warming up", style: "puff" },
+  { pct: 0.5, emoji: "🌋", label: "Eruption", vibe: "this is gonna hurt", style: "eruption" },
+  { pct: 0.75, emoji: "⚡", label: "Overload", vibe: "full carnage", style: "overload" },
   { pct: 1, emoji: "☠️", label: "Apocalypse", vibe: "they're done", style: "apocalypse" },
 ];
-
-function getScaleStops(stock: number): Stop[] {
-  if (stock < MIN_UNITS) return [];
-  // For the visual markers, we always want the 6 core stages if possible,
-  // or at least 4. Let's just use the ALL_STOPS and the ScalePicker will
-  // handle the visual distribution.
-  return ALL_STOPS;
-}
 
 export const SendSheet = ({
   open,
@@ -63,7 +55,7 @@ export const SendSheet = ({
   const [resultSplat, setResultSplat] = useState<Splat | null>(null);
   const [sharing, setSharing] = useState(false);
 
-  const stops = useMemo(() => getScaleStops(reservoirUnits), [reservoirUnits]);
+  const stops = useMemo(() => ALL_STOPS, []);
   
   // displayPct: 0 is MIN_UNITS, 1 is reservoirUnits
   const displayPct = reservoirUnits > MIN_UNITS 
@@ -92,8 +84,9 @@ export const SendSheet = ({
     if (launching) return;
     setLaunching(true);
     try {
+      // Complete removal of recipient name references
       const splat = await createSplat({
-        recipient_name: "A Friend",
+        recipient_name: "Someone", // Placeholder for DB non-null constraint
         units: units,
         style: currentStop.style,
       });
@@ -122,8 +115,9 @@ export const SendSheet = ({
     const shortId = resultSplat.id.substring(0, 8);
     const shortUrl = `${window.location.origin}/splat/${shortId}`;
     const grade = getGrade(resultSplat.units);
+    
+    // Updated to not use recipient name in templates
     const text = getRandomShareText({
-      recipient: resultSplat.recipient_name,
       sender: resolvedSenderName,
       units: resultSplat.units,
       grade,
@@ -201,7 +195,6 @@ export const SendSheet = ({
             </div>
           ) : (
             <div className="animate-in fade-in slide-in-from-bottom-4 duration-300">
-              {/* Result state unchanged */}
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => {
@@ -220,9 +213,11 @@ export const SendSheet = ({
               <p className="mt-1 text-sm font-medium text-muted-foreground">
                 The link is generated. Send it now.
               </p>
+
               <div className="mt-8 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60">
                 Send via
               </div>
+
               <div className="mt-4 flex justify-between gap-6 px-2">
                 <button onClick={() => handleSharePick("whatsapp")} disabled={sharing} className="group flex flex-col items-center gap-3 transition-transform active:scale-90 disabled:opacity-50">
                   <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[#25D366] text-white shadow-lg transition-all group-hover:scale-110">
@@ -273,8 +268,12 @@ function ScalePicker({
     const el = trackRef.current;
     if (!el) return;
     const r = el.getBoundingClientRect();
-    const ratio = Math.max(0, Math.min(1, (clientX - r.left) / r.width));
-    // Linearly map the visual ratio to the unit range [MIN_UNITS, stock]
+    // Added 16px of visual padding to the calculation so thumb doesn't hit edge
+    const padding = 16;
+    const innerWidth = r.width - padding * 2;
+    const relativeX = clientX - r.left - padding;
+    const ratio = Math.max(0, Math.min(1, relativeX / innerWidth));
+    
     const val = MIN_UNITS + ratio * (stock - MIN_UNITS);
     setUnits(Math.round(val));
   };
@@ -291,19 +290,11 @@ function ScalePicker({
     };
   }, [dragging]);
 
-  // Chip logic: if stock is high, use user's 100/250. 
-  // If low, use clean increments (e.g. multiples of 25 or just even steps).
   const chipValues = useMemo(() => {
     if (stock >= 500) return [MIN_UNITS, 100, 250, stock];
     if (stock >= 200) return [MIN_UNITS, 50, 150, stock];
-    // If very low, just use even quarters
     const step = (stock - MIN_UNITS) / 3;
-    return [
-      MIN_UNITS, 
-      Math.round(MIN_UNITS + step), 
-      Math.round(MIN_UNITS + step * 2), 
-      stock
-    ];
+    return [MIN_UNITS, Math.round(MIN_UNITS + step), Math.round(MIN_UNITS + step * 2), stock];
   }, [stock]);
 
   const unitPct = stock > 0 ? units / stock : 0;
@@ -340,40 +331,39 @@ function ScalePicker({
             setDragging(true);
             setFromClientX(e.clientX);
           }}
-          className="relative h-16 rounded-2xl bg-muted/50 cursor-pointer touch-none overflow-hidden"
+          className="relative h-16 rounded-2xl bg-muted/50 cursor-pointer touch-none overflow-hidden px-4"
         >
+          {/* Track fill */}
           <div
             className="absolute inset-y-0 left-0 transition-[width] duration-75"
             style={{
-              width: `${displayPct * 100}%`,
+              // Adjust fill width to account for padding
+              width: `calc(16px + ${displayPct} * (100% - 32px))`,
               background: "var(--gradient-primary)",
               boxShadow: "var(--shadow-glow)",
             }}
           />
-          {/* Evenly space the markers across the width of the track */}
-          {stops.map((s, i) => {
-            const visualPct = i / (stops.length - 1);
-            return (
-              <button
-                key={s.label}
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setUnits(Math.max(MIN_UNITS, Math.round(s.pct * stock)));
-                }}
-                className="absolute top-0 bottom-0 -translate-x-1/2 flex flex-col items-center justify-center text-xs pointer-events-none"
-                style={{ left: `${visualPct * 100}%` }}
-              >
-                <span className={`text-base leading-none transition-opacity ${displayPct >= visualPct - 0.01 ? "opacity-100" : "opacity-30"}`}>
+          
+          {/* Markers */}
+          <div className="absolute inset-0 px-4 flex justify-between items-center pointer-events-none">
+            {stops.map((s, i) => {
+              const visualPct = i / (stops.length - 1);
+              return (
+                <div
+                  key={s.label}
+                  className={`text-base leading-none transition-opacity duration-200 ${displayPct >= visualPct - 0.01 ? "opacity-100" : "opacity-30"}`}
+                >
                   {s.emoji}
-                </span>
-              </button>
-            );
-          })}
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Thumb */}
           <div
             className="absolute top-1/2 size-10 rounded-full bg-background border-4 border-primary shadow-xl flex items-center justify-center transition-transform pointer-events-none"
             style={{
-              left: `${displayPct * 100}%`,
+              left: `calc(16px + ${displayPct} * (100% - 32px))`,
               transform: `translate(-50%, -50%) scale(${dragging ? 1.15 : 1})`,
             }}
           >
