@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { TrendingUp, ArrowLeft } from "lucide-react";
+import { TrendingUp } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -71,6 +71,25 @@ const SplatPage = () => {
   const [showTaunt, setShowTaunt] = useState(false);
   const [variant, setVariant] = useState<"A" | "B">("A");
 
+  // Intensity scaling: 20 units is baseline (1.0), 100 units is "full" (2.5), Apocalypse (500) is MAX
+  const intensity = useMemo(() => {
+    if (!splat) return 1;
+    // Normalize: 20 -> 1, 100 -> 2.5, 500 -> 5
+    return Math.max(0.8, Math.min(5, 1 + (splat.units - 20) / 50));
+  }, [splat]);
+
+  const rainCount = useMemo(() => Math.floor(15 * intensity), [intensity]);
+  const rainDrops = useMemo(
+    () =>
+      Array.from({ length: rainCount }, () => ({
+        left: Math.random() * 100,
+        delay: Math.random() * 0.8,
+        duration: 1.2 + Math.random() * 1.0,
+        size: Math.floor((20 + Math.random() * 20) * (intensity * 0.8)),
+      })),
+    [rainCount, intensity]
+  );
+
   useEffect(() => {
     if (!id) {
       setError("Invalid link");
@@ -86,7 +105,6 @@ const SplatPage = () => {
           const title = `${sender} just hit you with ${s.units} units 💩`;
           updateMetaTags(title, "Open to see the damage and retaliate", "/og/cannon.png");
           
-          // Start animation sequence after data is loaded
           setVariant(Math.random() < 0.5 ? "A" : "B");
           const sequence = [
             { p: "incoming", t: 50 },
@@ -124,9 +142,8 @@ const SplatPage = () => {
 
   const buttonText = useMemo(() => {
     if (!isRegistered || viewerUnits >= LAUNCH_THRESHOLD) {
-      const base = isRegistered ? "Retaliate 💩 →" : "Retaliate 💩 →";
       const angry = [...BUTTON_COPY].reverse().find((b) => elapsed >= b.t)?.text;
-      return angry || base;
+      return angry || "Retaliate 💩 →";
     }
     return "Fill up to fire back →";
   }, [isRegistered, viewerUnits, elapsed]);
@@ -156,7 +173,6 @@ const SplatPage = () => {
   const styleMeta = getDeliveryStyleMeta(splat.style);
   const grade = getGrade(splat.units);
   const sender = splat.sender_name || "Friend";
-  const headline = `💥 ${sender} just CANNON BLASTED you`;
 
   return (
     <div className="relative mx-auto min-h-screen w-full max-w-md overflow-hidden bg-black text-white">
@@ -174,10 +190,10 @@ const SplatPage = () => {
           >
             <motion.h1
               initial={{ scale: 0.6 }}
-              animate={{ scale: [0.6, 1.15, 1] }}
+              animate={{ scale: [0.6, 1 + (intensity * 0.1), 1] }}
               transition={{ duration: 0.4 }}
-              className="text-5xl font-black tracking-tight text-red-500 sm:text-7xl"
-              style={{ textShadow: "0 0 30px rgba(239,68,68,0.8)" }}
+              className={`text-5xl font-black tracking-tight ${intensity > 2 ? 'text-red-600' : 'text-red-500'} sm:text-7xl`}
+              style={{ textShadow: `0 0 ${20 * intensity}px rgba(239,68,68,0.8)` }}
             >
               INCOMING 💩
             </motion.h1>
@@ -188,8 +204,8 @@ const SplatPage = () => {
       <AnimatePresence>
         {phase === "drop" && (
           <motion.div
-            initial={{ y: "-100vh" }}
-            animate={{ y: "30vh" }}
+            initial={{ y: "-100vh", scale: 0.5 + intensity * 0.2 }}
+            animate={{ y: "30vh", scale: 0.6 + intensity * 0.3 }}
             transition={{ duration: 0.55, ease: [0.4, 0, 1, 1] }}
             className="fixed left-1/2 top-0 z-40 -translate-x-1/2 text-9xl"
           >
@@ -198,11 +214,28 @@ const SplatPage = () => {
         )}
       </AnimatePresence>
 
+      <div className="pointer-events-none absolute inset-0 z-[6] overflow-hidden">
+        {rainDrops.map((d, i) => (
+          <span
+            key={i}
+            className="absolute leading-none"
+            style={{
+              left: `${d.left}%`,
+              top: "-10vh",
+              fontSize: `${d.size}px`,
+              animation: `emoji-rain ${d.duration}s ${d.delay}s linear forwards`,
+            }}
+          >
+            💩
+          </span>
+        ))}
+      </div>
+
       <AnimatePresence>
         {(phase === "impact" || phase === "settled") && (
           <motion.div
             initial={{ scale: 0, opacity: 0.9 }}
-            animate={{ scale: 4, opacity: 0 }}
+            animate={{ scale: 2 + intensity * 1.5, opacity: 0 }}
             transition={{ duration: 0.9, ease: "easeOut" }}
             className="pointer-events-none fixed left-1/2 top-1/2 z-10 h-64 w-64 -translate-x-1/2 -translate-y-1/2 rounded-full"
             style={{
@@ -225,8 +258,8 @@ const SplatPage = () => {
             <div className="relative">
               <motion.svg
                 viewBox="0 0 200 200"
-                width={180}
-                height={180}
+                width={160 + (intensity * 15)}
+                height={160 + (intensity * 15)}
                 initial={{ scale: 0, rotate: variant === "B" ? 15 : -20 }}
                 animate={{ scale: 1, rotate: phase === "face-hit" ? (variant === "B" ? [0, 18, -14, 8, 0] : [0, -15, 12, -8, 0]) : 0 }}
                 transition={{ type: "spring", stiffness: 240, damping: 14 }}
@@ -249,19 +282,17 @@ const SplatPage = () => {
                 )}
                 {(phase === "face-dizzy" || phase === "face-out") && (
                   <g fill="#6b3a1a">
-                    <motion.ellipse cx="60" cy="115" rx="14" ry="10" initial={{ scale: 0 }} animate={{ scale: 1 }} />
-                    <motion.path d="M55 120 q-3 18 2 32 q3 8 8 0 q4 -14 1 -28 z" initial={{ scaleY: 0 }} animate={{ scaleY: 1 }} style={{ transformOrigin: "55px 120px" }} />
-                    <motion.ellipse cx="135" cy="105" rx="12" ry="9" initial={{ scale: 0 }} animate={{ scale: 1 }} />
-                    <motion.path d="M132 110 q-2 22 4 38 q3 7 7 -1 q3 -16 0 -32 z" initial={{ scaleY: 0 }} animate={{ scaleY: 1 }} style={{ transformOrigin: "132px 110px" }} />
-                    <motion.ellipse cx="100" cy="60" rx="22" ry="14" initial={{ scale: 0 }} animate={{ scale: 1 }} />
+                    <motion.ellipse cx="60" cy="115" rx={12 * intensity} ry={8 * intensity} initial={{ scale: 0 }} animate={{ scale: 1 }} />
+                    <motion.ellipse cx="135" cy="105" rx={10 * intensity} ry={7 * intensity} initial={{ scale: 0 }} animate={{ scale: 1 }} />
+                    <motion.ellipse cx="100" cy="60" rx={20 * intensity} ry={12 * intensity} initial={{ scale: 0 }} animate={{ scale: 1 }} />
                   </g>
                 )}
               </motion.svg>
               <AnimatePresence>
                 {phase === "face-in" && (
                   <motion.div
-                    initial={{ x: variant === "B" ? -500 : 400, y: variant === "B" ? 0 : -20, rotate: 0, scale: variant === "B" ? 1.2 : 1 }}
-                    animate={{ x: 0, y: 0, rotate: variant === "B" ? -360 : 540, scale: variant === "B" ? 1.3 : 1.1 }}
+                    initial={{ x: variant === "B" ? -500 : 400, y: variant === "B" ? 0 : -20, rotate: 0, scale: (variant === "B" ? 1.2 : 1) * intensity * 0.8 }}
+                    animate={{ x: 0, y: 0, rotate: variant === "B" ? -360 : 540, scale: (variant === "B" ? 1.3 : 1.1) * intensity * 0.8 }}
                     exit={{ opacity: 0 }}
                     transition={{ duration: 0.35, ease: [0.5, 0, 0.9, 0.5] }}
                     className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-6xl"
@@ -270,12 +301,12 @@ const SplatPage = () => {
                 {phase === "face-hit" && (
                   <motion.div
                     initial={{ scale: 0, opacity: 1 }}
-                    animate={{ scale: 1.6, opacity: 0 }}
+                    animate={{ scale: 1 + intensity * 0.5, opacity: 0 }}
                     transition={{ duration: 0.45, ease: "easeOut" }}
                     className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
                   >
                     <span className="text-4xl font-black text-amber-300 drop-shadow-[0_2px_0_rgba(0,0,0,0.6)]">
-                      {variant === "B" ? "SPLOOSH!" : "SPLAT!"}
+                      {intensity > 2.5 ? "KABOOM!" : variant === "B" ? "SPLOOSH!" : "SPLAT!"}
                     </span>
                   </motion.div>
                 )}
@@ -286,7 +317,10 @@ const SplatPage = () => {
       </AnimatePresence>
 
       <motion.div
-        animate={phase === "impact" ? { x: [0, -12, 10, -8, 6, -4, 0], y: [0, 6, -8, 4, -3, 2, 0] } : { x: 0, y: 0 }}
+        animate={phase === "impact" ? { 
+          x: [0, -8 * intensity, 7 * intensity, -5 * intensity, 4 * intensity, -2 * intensity, 0], 
+          y: [0, 4 * intensity, -5 * intensity, 3 * intensity, -2 * intensity, 1 * intensity, 0] 
+        } : { x: 0, y: 0 }}
         transition={{ duration: 0.3 }}
         className="relative z-20 mx-auto flex min-h-screen max-w-md flex-col px-4 pt-6"
       >
@@ -309,7 +343,7 @@ const SplatPage = () => {
               className="mt-8 rounded-[32px] bg-neutral-900/90 p-8 text-center shadow-2xl ring-1 ring-white/5 backdrop-blur-xl"
             >
               <motion.div initial={{ scale: 0 }} animate={{ scale: 1, rotate: [0, -8, 8, 0] }} transition={{ type: "spring", stiffness: 220, delay: 0.15 }} className="mx-auto text-7xl">💩</motion.div>
-              <h1 className="mt-4 text-3xl font-black tracking-tight leading-tight uppercase">{headline}</h1>
+              <h1 className="mt-4 text-3xl font-black tracking-tight leading-tight uppercase">💥 {sender} just CANNON BLASTED you</h1>
               <div className="mt-5 inline-flex items-center gap-2 rounded-full bg-amber-900/40 px-5 py-2.5 text-base font-black text-amber-400">
                 {splat.units} {grade} units 💩
               </div>
