@@ -5,9 +5,9 @@ export type Goal =
   | "manage_weight" 
   | "manage_condition" 
   | "curious"
-  | "digestion" // Keep legacy for compatibility
-  | "ibs"       // Keep legacy for compatibility
-  | "weight";    // Keep legacy for compatibility
+  | "digestion" 
+  | "ibs"       
+  | "weight";
 
 export type FrequencyPref = "once" | "two_three" | "alternate" | "varies" | "less" | "irregular";
 
@@ -25,8 +25,8 @@ export type StoolColor =
 export interface Profile {
   name: string;
   avatar: AvatarEmoji;
-  goal?: Goal; // legacy
-  goals?: Goal[]; // new multi-select
+  goal?: Goal; 
+  goals?: Goal[]; 
   frequencyPref: FrequencyPref;
   createdAt: number;
 }
@@ -36,12 +36,10 @@ export type BloodPresence = "paper_only" | "in_bowl";
 export interface PoopLog {
   id: string;
   timestamp: number;
-  bristolType: number; // 0 = no movement, 1-7 Bristol scale
+  bristolType: number; 
   color: StoolColor;
-  frequency: number; // which # of the day (0 for no-movement, 1..4 otherwise)
+  frequency: number; 
   tags?: string[];
-  foodTags?: string[];
-  symptoms?: string[];
   notes?: string;
   gutScore: number;
   noMovement?: boolean;
@@ -51,111 +49,52 @@ export interface PoopLog {
   notePrompt?: string;
 }
 
-export const FOOD_TAG_OPTIONS: { id: string; label: string; emoji: string }[] = [
-  { id: "dairy", label: "Dairy", emoji: "🥛" },
-  { id: "gluten", label: "Gluten", emoji: "🌾" },
-  { id: "spicy", label: "Spicy", emoji: "🌶️" },
-  { id: "caffeine", label: "Caffeine", emoji: "☕" },
-  { id: "vegetables", label: "Vegetables", emoji: "🥦" },
-  { id: "meat", label: "Meat", emoji: "🥩" },
-  { id: "alcohol", label: "Alcohol", emoji: "🍺" },
-  { id: "processed", label: "Processed", emoji: "🍔" },
-  { id: "medication", label: "Medication", emoji: "💊" },
-  { id: "high_stress", label: "High stress", emoji: "😰" },
-];
-
-export const SYMPTOM_OPTIONS: { id: string; label: string; emoji: string }[] = [
-  { id: "bloating", label: "Bloating", emoji: "😮‍💨" },
-  { id: "cramps", label: "Cramps", emoji: "😣" },
-  { id: "urgency", label: "Urgency", emoji: "🚨" },
-  { id: "straining", label: "Straining", emoji: "😓" },
-  { id: "nausea", label: "Nausea", emoji: "🤢" },
-  { id: "fatigue", label: "Fatigue", emoji: "😴" },
-  { id: "gas", label: "Gas", emoji: "💨" },
-];
-
-export const getFoodTagMeta = (id: string) => FOOD_TAG_OPTIONS.find((t) => t.id === id);
-export const getSymptomMeta = (id: string) => SYMPTOM_OPTIONS.find((t) => t.id === id);
-
-export interface FoodTrigger {
-  id: string;
-  label: string;
-  emoji: string;
-  avgDrop: number;
-  count: number;
-}
-
-export const getFoodTriggers = (logs: PoopLog[]): FoodTrigger[] => {
-  const recent = logs.slice(0, 30);
-  const tagged = recent.filter((l) => l.foodTags && l.foodTags.length > 0);
-  if (recent.length < 14 || tagged.length < 5) return [];
-  const overallAvg = recent.reduce((s, l) => s + l.gutScore, 0) / recent.length;
-  const out: FoodTrigger[] = [];
-  for (const f of FOOD_TAG_OPTIONS) {
-    const withTag = recent.filter((l) => l.foodTags?.includes(f.id));
-    if (withTag.length < 2) continue;
-    const lowScoreCount = withTag.filter((l) => l.gutScore < 55).length;
-    if (lowScoreCount === 0) continue;
-    const avgWith = withTag.reduce((s, l) => s + l.gutScore, 0) / withTag.length;
-    const drop = Math.round(overallAvg - avgWith);
-    if (drop <= 0) continue;
-    out.push({
-      id: f.id,
-      label: f.label,
-      emoji: f.emoji,
-      avgDrop: drop,
-      count: withTag.length,
-    });
-  }
-  return out.sort((a, b) => b.avgDrop - a.avgDrop).slice(0, 3);
-};
-
-export const getTopFoodTagThisWeek = (logs: PoopLog[]): string | null => {
-  const cutoff = Date.now() - 7 * 24 * 60 * 60 * 1000;
-  const counts: Record<string, number> = {};
-  for (const l of logs) {
-    if (l.timestamp < cutoff) continue;
-    for (const id of l.foodTags || []) counts[id] = (counts[id] || 0) + 1;
-  }
-  const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
-  return sorted[0]?.[0] ?? null;
-};
-
-export const IBS_TIPS: Record<string, string> = {
-  dairy: "Dairy showed up a lot this week — try a 3-day dairy-free stretch and see if your scores improve.",
-  caffeine: "Caffeine speeds up gut transit. Notice any pattern with your morning coffee?",
-  gluten: "Gluten popped up often this week — worth experimenting with a low-gluten breakfast and tracking the result.",
-  spicy: "Spicy foods can trigger urgency for some IBS folks — try logging right after spicy meals to spot a pattern.",
-  alcohol: "Alcohol is a common IBS trigger — see if cutting back this week shifts your scores.",
-  processed: "Processed foods tend to be low fibre and high additive — try one swap a day for whole foods.",
-  high_stress: "Stress is one of the top IBS triggers — your high-stress days may be linked to lower scores.",
-  vegetables: "Soluble fibre (oats, bananas) tends to be gentler than insoluble fibre (raw veg) for IBS — worth experimenting.",
-  meat: "Try a low-FODMAP breakfast this week and see if your score improves.",
-  medication: "Some medications affect gut motility — track timing to spot patterns.",
-};
-
-export const GENERIC_IBS_TIP = "Eating at consistent times helps regulate gut transit — try logging your meal times this week.";
-
-export const TAG_OPTIONS: { id: string; label: string; emoji: string; category: "food" | "drink" | "lifestyle" | "symptom" }[] = [
-  { id: "dairy", label: "Dairy", emoji: "🧀", category: "food" },
-  { id: "gluten", label: "Gluten", emoji: "🍞", category: "food" },
-  { id: "spicy", label: "Spicy", emoji: "🌶️", category: "food" },
-  { id: "fiber", label: "High fiber", emoji: "🥦", category: "food" },
-  { id: "meat", label: "Red meat", emoji: "🥩", category: "food" },
-  { id: "sugar", label: "Sugar", emoji: "🍬", category: "food" },
-  { id: "fried", label: "Fried food", emoji: "🍟", category: "food" },
-  { id: "fruit", label: "Fruit", emoji: "🍎", category: "food" },
-  { id: "alcohol", label: "Alcohol", emoji: "🍺", category: "drink" },
+export const TAG_OPTIONS: { id: string; label: string; emoji: string; category: "food" | "drink" | "lifestyle" | "symptom"; subcategory?: string }[] = [
+  // Food - Grains
+  { id: "rice", label: "Rice", emoji: "🍚", category: "food", subcategory: "Grains" },
+  { id: "roti", label: "Roti/Wheat", emoji: "🌾", category: "food", subcategory: "Grains" },
+  { id: "bread", label: "Bread", emoji: "🍞", category: "food", subcategory: "Grains" },
+  { id: "oats", label: "Oats", emoji: "🥣", category: "food", subcategory: "Grains" },
+  // Food - Protein
+  { id: "chicken", label: "Chicken", emoji: "🍗", category: "food", subcategory: "Protein" },
+  { id: "meat", label: "Red meat", emoji: "🥩", category: "food", subcategory: "Protein" },
+  { id: "fish", label: "Fish", emoji: "🐟", category: "food", subcategory: "Protein" },
+  { id: "dal", label: "Dal", emoji: "🫘", category: "food", subcategory: "Protein" },
+  { id: "eggs", label: "Eggs", emoji: "🥚", category: "food", subcategory: "Protein" },
+  { id: "paneer", label: "Paneer", emoji: "🧆", category: "food", subcategory: "Protein" },
+  // Food - Vegetables
+  { id: "fiber", label: "Fibre rich", emoji: "🥦", category: "food", subcategory: "Vegetables" },
+  { id: "salad", label: "Salad", emoji: "🥗", category: "food", subcategory: "Vegetables" },
+  { id: "spicy", label: "Spicy", emoji: "🌶️", category: "food", subcategory: "Vegetables" },
+  { id: "onion_garlic", label: "Onion/Garlic", emoji: "🧅", category: "food", subcategory: "Vegetables" },
+  // Food - Problem foods
+  { id: "dairy", label: "Dairy", emoji: "🧀", category: "food", subcategory: "Problem foods" },
+  { id: "sugar", label: "Sugar", emoji: "🍬", category: "food", subcategory: "Problem foods" },
+  { id: "fried", label: "Fried", emoji: "🍟", category: "food", subcategory: "Problem foods" },
+  { id: "fast_food", label: "Fast food", emoji: "🍔", category: "food", subcategory: "Problem foods" },
+  { id: "street_food", label: "Street food", emoji: "🌮", category: "food", subcategory: "Problem foods" },
+  
+  // Drink
   { id: "coffee", label: "Coffee", emoji: "☕", category: "drink" },
-  { id: "water", label: "Lots of water", emoji: "💧", category: "drink" },
-  { id: "stress", label: "Stress", emoji: "😰", category: "lifestyle" },
-  { id: "exercise", label: "Exercise", emoji: "🏃", category: "lifestyle" },
-  { id: "travel", label: "Travel", emoji: "✈️", category: "lifestyle" },
+  { id: "tea", label: "Tea", emoji: "🍵", category: "drink" },
+  { id: "alcohol", label: "Alcohol", emoji: "🍺", category: "drink" },
+  { id: "milk", label: "Milk", emoji: "🥛", category: "drink" },
+  { id: "water", label: "Well hydrated", emoji: "💧", category: "drink" },
+  { id: "sugary_drinks", label: "Sugary drinks", emoji: "🧃", category: "drink" },
+
+  // Lifestyle
+  { id: "stress", label: "Stressed", emoji: "😰", category: "lifestyle" },
+  { id: "exercise", label: "Exercised", emoji: "🏃", category: "lifestyle" },
   { id: "poor_sleep", label: "Poor sleep", emoji: "😴", category: "lifestyle" },
+  { id: "travel", label: "Travelling", emoji: "✈️", category: "lifestyle" },
+  { id: "medication", label: "Medication", emoji: "💊", category: "lifestyle" },
+
+  // Symptoms
   { id: "bloating", label: "Bloating", emoji: "🎈", category: "symptom" },
   { id: "cramps", label: "Cramps", emoji: "⚡", category: "symptom" },
   { id: "nausea", label: "Nausea", emoji: "🤢", category: "symptom" },
   { id: "urgency", label: "Urgency", emoji: "🏃‍♂️", category: "symptom" },
+  { id: "incomplete", label: "Incomplete feeling", emoji: "😮‍💨", category: "symptom" },
 ];
 
 export const getTagMeta = (id: string) => TAG_OPTIONS.find((t) => t.id === id);

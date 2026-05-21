@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { AppShell } from "@/components/AppShell";
 import { HonestyCheck } from "@/components/HonestyCheck";
 import { toast } from "@/hooks/use-toast";
@@ -20,9 +19,9 @@ import {
 } from "@/lib/storage";
 import { applyLogToReservoir } from "@/lib/reservoir";
 import { isFlaggedColor, COLOR_CONTEXT } from "@/lib/colorContext";
-import { getSmartPrompt } from "@/lib/smartPrompt";
 import { creditReservoirBonus, evaluateAndMarkCompletion } from "@/lib/challenges";
 import { shouldShowHonestyCheck, markHonestyCheckStarted, markHonestyCheckFinished } from "@/lib/honesty";
+import { cn } from "@/lib/utils";
 
 const colorOrder: StoolColor[] = [
   "medium_brown",
@@ -36,7 +35,6 @@ const colorOrder: StoolColor[] = [
 ];
 
 const TOTAL_STEPS = 3;
-const NOTES_MAX = 280;
 
 const LogEntry = () => {
   const navigate = useNavigate();
@@ -48,10 +46,7 @@ const LogEntry = () => {
   const [colorContextExplained, setColorContextExplained] = useState<boolean | null>(null);
   const [tags, setTags] = useState<string[]>([]);
   const [bloodPresence, setBloodPresence] = useState<BloodPresence | "none" | null>(null);
-  const [notes, setNotes] = useState("");
   const [honestyOpen, setHonestyOpen] = useState(false);
-
-  const notePrompt = useMemo(() => getSmartPrompt(), []);
 
   useEffect(() => {
     if (!getProfile()) navigate("/onboarding", { replace: true });
@@ -71,12 +66,10 @@ const LogEntry = () => {
       color,
       frequency: todayCount,
       tags: tags.length ? tags : undefined,
-      notes: notes.trim() || undefined,
       gutScore: score,
       colorContext: isFlaggedColor(color) ? colorContextChips : undefined,
       colorContextExplained: isFlaggedColor(color) ? colorContextExplained ?? false : undefined,
       bloodPresence: bloodPresence && bloodPresence !== "none" ? (bloodPresence as BloodPresence) : undefined,
-      notePrompt: notes.trim() ? notePrompt : undefined,
     };
     saveLog(log);
     markHonestyCheckFinished();
@@ -136,6 +129,19 @@ const LogEntry = () => {
   };
 
   const flaggedMeta = color && isFlaggedColor(color) ? COLOR_CONTEXT[color] : undefined;
+
+  const foodSubgroups = useMemo(() => {
+    const options = TAG_OPTIONS.filter(t => t.category === "food");
+    const groups: Record<string, typeof options> = {};
+    options.forEach(o => {
+      const sub = o.subcategory || "Other";
+      if (!groups[sub]) groups[sub] = [];
+      groups[sub].push(o);
+    });
+    return groups;
+  }, []);
+
+  const otherCategories = ["drink", "lifestyle", "symptom"] as const;
 
   return (
     <AppShell>
@@ -255,38 +261,77 @@ const LogEntry = () => {
 
         {step === 3 && (
           <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
-            <h2 className="text-2xl font-bold text-foreground">The details</h2>
-            <p className="mt-1 text-sm text-muted-foreground">How was your day? (Optional)</p>
+            <h2 className="text-2xl font-bold text-foreground">Anything worth noting? 👀</h2>
+            <p className="mt-1 text-sm text-muted-foreground font-medium">Helps us spot what affects your gut</p>
             
-            <div className="mt-6 space-y-6">
-              {(["food", "drink", "lifestyle", "symptom"] as const).map((cat) => (
-                <div key={cat}>
-                  <h3 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                    {cat === "food" ? "🍽️ Food" : cat === "drink" ? "🥤 Drink" : cat === "lifestyle" ? "🌿 Lifestyle" : "⚠️ Symptoms"}
-                  </h3>
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    {TAG_OPTIONS.filter((t) => t.category === cat).map((t) => {
-                      const active = tags.includes(t.id);
-                      return (
-                        <button
-                          key={t.id}
-                          onClick={() => toggle(t.id, tags, setTags)}
-                          className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-medium transition-all ${active ? "border-primary bg-primary/10 text-primary" : "border-border bg-card text-muted-foreground"}`}
-                        >
-                          <span>{t.emoji}</span>
-                          <span>{t.label}</span>
-                        </button>
-                      );
-                    })}
+            <div className="mt-8 space-y-8">
+              {/* Food Section */}
+              <div className="space-y-6">
+                <h3 className="text-[11px] font-black uppercase tracking-[0.2em] text-primary px-1">🍱 Food</h3>
+                {Object.entries(foodSubgroups).map(([sub, items]) => (
+                  <div key={sub} className="space-y-3">
+                    <h4 className="text-[10px] font-bold text-muted-foreground/60 uppercase tracking-widest px-1">{sub}</h4>
+                    <div className="flex overflow-x-auto no-scrollbar gap-2 pb-1 px-1">
+                      {items.map((t) => {
+                        const active = tags.includes(t.id);
+                        return (
+                          <button
+                            key={t.id}
+                            onClick={() => toggle(t.id, tags, setTags)}
+                            className={cn(
+                              "flex shrink-0 items-center gap-2 rounded-full border px-4 py-2.5 text-sm font-bold transition-all active:scale-95",
+                              active 
+                                ? "border-primary bg-primary text-primary-foreground shadow-lg shadow-primary/20" 
+                                : "border-border bg-card text-muted-foreground"
+                            )}
+                          >
+                            <span>{t.emoji}</span>
+                            <span>{t.label}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
 
-              <div className="pt-4 border-t border-border/40">
-                <h3 className="text-sm font-bold flex items-center gap-2 text-foreground">
+              {/* Other Categories */}
+              {otherCategories.map((cat) => {
+                const label = cat === "drink" ? "🥤 Drink" : cat === "lifestyle" ? "🌿 Lifestyle" : "⚠️ Symptoms";
+                const items = TAG_OPTIONS.filter(t => t.category === cat);
+                return (
+                  <div key={cat} className="space-y-4">
+                    <h3 className="text-[11px] font-black uppercase tracking-[0.2em] text-primary px-1">{label}</h3>
+                    <div className="flex overflow-x-auto no-scrollbar gap-2 pb-1 px-1">
+                      {items.map((t) => {
+                        const active = tags.includes(t.id);
+                        return (
+                          <button
+                            key={t.id}
+                            onClick={() => toggle(t.id, tags, setTags)}
+                            className={cn(
+                              "flex shrink-0 items-center gap-2 rounded-full border px-4 py-2.5 text-sm font-bold transition-all active:scale-95",
+                              active 
+                                ? "border-primary bg-primary text-primary-foreground shadow-lg shadow-primary/20" 
+                                : "border-border bg-card text-muted-foreground"
+                            )}
+                          >
+                            <span>{t.emoji}</span>
+                            <span>{t.label}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+
+              {/* Blood Section */}
+              <div className="pt-6 border-t border-border/40">
+                <h3 className="text-sm font-black flex items-center gap-2 text-foreground px-1">
                    Any blood? <AlertCircle className="h-4 w-4 text-destructive" />
                 </h3>
-                <div className="mt-3 flex flex-wrap gap-2">
+                <div className="mt-4 flex flex-wrap gap-2 px-1">
                   {[
                     { id: "none", label: "No blood ✓" },
                     { id: "paper_only", label: "On paper" },
@@ -295,23 +340,17 @@ const LogEntry = () => {
                     <button
                       key={opt.id}
                       onClick={() => setBloodPresence(opt.id as any)}
-                      className={`rounded-full border px-4 py-2 text-sm font-semibold transition-all ${bloodPresence === opt.id ? "border-primary bg-primary/10 text-primary" : "border-border bg-card text-muted-foreground"}`}
+                      className={cn(
+                        "rounded-full border px-5 py-2.5 text-sm font-bold transition-all active:scale-95",
+                        bloodPresence === opt.id 
+                          ? "border-primary bg-primary text-primary-foreground shadow-lg shadow-primary/20" 
+                          : "border-border bg-card text-muted-foreground"
+                      )}
                     >
                       {opt.label}
                     </button>
                   ))}
                 </div>
-              </div>
-
-              <div className="space-y-3">
-                <h3 className="text-sm font-bold text-foreground">Notes</h3>
-                <Textarea
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value.slice(0, NOTES_MAX))}
-                  placeholder={notePrompt}
-                  className="min-h-[100px] rounded-2xl border-border bg-card text-sm text-foreground"
-                  maxLength={NOTES_MAX}
-                />
               </div>
             </div>
           </div>
@@ -321,8 +360,14 @@ const LogEntry = () => {
       {step === 3 && (
         <div className="fixed inset-x-0 bottom-[64px] z-30 p-4 bg-gradient-to-t from-background via-background/90 to-transparent">
           <div className="mx-auto w-full max-w-md">
-            <Button variant="hero" size="xl" className="w-full h-14 font-black" onClick={handleCalculate}>
-              Calculate my score →
+            <Button 
+              variant="hero" 
+              size="xl" 
+              className="w-full h-14 font-black text-lg shadow-[var(--shadow-glow)]" 
+              onClick={handleCalculate}
+              style={{ background: "var(--gradient-primary)" }}
+            >
+              Done, calculate my score 🎯
             </Button>
           </div>
         </div>
