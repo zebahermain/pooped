@@ -3,7 +3,7 @@ import { Copy, Share2, ArrowLeft, Sun, Moon } from "lucide-react";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
-import { useTheme } from "@/components/ThemeProvider";
+
 import {
   buildSplatUrl,
   buildWhatsAppLink,
@@ -48,7 +48,7 @@ export const SendSheet = ({
   onSent,
 }: Props) => {
   const { user } = useAuth();
-  const { theme, toggle: toggleTheme } = useTheme();
+  
   const [stage, setStage] = useState<Stage>("pick");
   const [units, setUnits] = useState<number>(Math.max(MIN_UNITS, Math.round(reservoirUnits * 0.4)));
   const [launching, setLaunching] = useState(false);
@@ -156,13 +156,6 @@ export const SendSheet = ({
                     Stock <span className="text-foreground font-black">{reservoirUnits}</span> · {getGrade(reservoirUnits)} grade
                   </p>
                 </div>
-                <button
-                  onClick={toggleTheme}
-                  aria-label="Toggle theme"
-                  className="size-10 rounded-full border border-border bg-card flex items-center justify-center text-foreground hover:bg-accent/40 transition-colors"
-                >
-                  {theme === "dark" ? <Sun className="size-4" /> : <Moon className="size-4" />}
-                </button>
               </header>
 
               <ScalePicker 

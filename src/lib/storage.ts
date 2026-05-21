@@ -1,7 +1,16 @@
-export type Goal = "digestion" | "ibs" | "weight" | "curious";
-export type FrequencyPref = "once" | "two_three" | "less" | "irregular";
-// Avatar identifier. Either a legacy emoji ("💩", "🦠", etc.) or a key from
-// AVATAR_OPTIONS in src/lib/avatars.tsx (e.g. "avocado", "pepper", ...).
+export type Goal = 
+  | "track_patterns" 
+  | "understand_gut" 
+  | "improve_health" 
+  | "manage_weight" 
+  | "manage_condition" 
+  | "curious"
+  | "digestion" // Keep legacy for compatibility
+  | "ibs"       // Keep legacy for compatibility
+  | "weight";    // Keep legacy for compatibility
+
+export type FrequencyPref = "once" | "two_three" | "alternate" | "varies" | "less" | "irregular";
+
 export type AvatarEmoji = string;
 export type StoolColor =
   | "medium_brown"
@@ -16,7 +25,8 @@ export type StoolColor =
 export interface Profile {
   name: string;
   avatar: AvatarEmoji;
-  goal: Goal;
+  goal?: Goal; // legacy
+  goals?: Goal[]; // new multi-select
   frequencyPref: FrequencyPref;
   createdAt: number;
 }
@@ -35,13 +45,9 @@ export interface PoopLog {
   notes?: string;
   gutScore: number;
   noMovement?: boolean;
-  /** Dietary / medication causes the user ticked on the color context check. */
   colorContext?: string[];
-  /** True if the user confirmed at least one context chip for a flagged color. */
   colorContextExplained?: boolean;
-  /** null (or undefined) = user answered "no blood" or it wasn't asked. */
   bloodPresence?: BloodPresence;
-  /** The exact smart-prompt text shown when this note was written. */
   notePrompt?: string;
 }
 
@@ -75,11 +81,10 @@ export interface FoodTrigger {
   id: string;
   label: string;
   emoji: string;
-  avgDrop: number; // positive number = how many points lower vs overall avg
+  avgDrop: number;
   count: number;
 }
 
-// Trigger tracker: top food tags correlated with low Gut Scores (<55) over last 30 logs.
 export const getFoodTriggers = (logs: PoopLog[]): FoodTrigger[] => {
   const recent = logs.slice(0, 30);
   const tagged = recent.filter((l) => l.foodTags && l.foodTags.length > 0);
@@ -105,7 +110,6 @@ export const getFoodTriggers = (logs: PoopLog[]): FoodTrigger[] => {
   return out.sort((a, b) => b.avgDrop - a.avgDrop).slice(0, 3);
 };
 
-// Most logged food tag in the last 7 days (for IBS weekly tip)
 export const getTopFoodTagThisWeek = (logs: PoopLog[]): string | null => {
   const cutoff = Date.now() - 7 * 24 * 60 * 60 * 1000;
   const counts: Record<string, number> = {};
@@ -118,29 +122,19 @@ export const getTopFoodTagThisWeek = (logs: PoopLog[]): string | null => {
 };
 
 export const IBS_TIPS: Record<string, string> = {
-  dairy:
-    "Dairy showed up a lot this week — try a 3-day dairy-free stretch and see if your scores improve.",
-  caffeine:
-    "Caffeine speeds up gut transit. Notice any pattern with your morning coffee?",
-  gluten:
-    "Gluten popped up often this week — worth experimenting with a low-gluten breakfast and tracking the result.",
-  spicy:
-    "Spicy foods can trigger urgency for some IBS folks — try logging right after spicy meals to spot a pattern.",
-  alcohol:
-    "Alcohol is a common IBS trigger — see if cutting back this week shifts your scores.",
-  processed:
-    "Processed foods tend to be low fibre and high additive — try one swap a day for whole foods.",
-  high_stress:
-    "Stress is one of the top IBS triggers — your high-stress days may be linked to lower scores.",
-  vegetables:
-    "Soluble fibre (oats, bananas) tends to be gentler than insoluble fibre (raw veg) for IBS — worth experimenting.",
+  dairy: "Dairy showed up a lot this week — try a 3-day dairy-free stretch and see if your scores improve.",
+  caffeine: "Caffeine speeds up gut transit. Notice any pattern with your morning coffee?",
+  gluten: "Gluten popped up often this week — worth experimenting with a low-gluten breakfast and tracking the result.",
+  spicy: "Spicy foods can trigger urgency for some IBS folks — try logging right after spicy meals to spot a pattern.",
+  alcohol: "Alcohol is a common IBS trigger — see if cutting back this week shifts your scores.",
+  processed: "Processed foods tend to be low fibre and high additive — try one swap a day for whole foods.",
+  high_stress: "Stress is one of the top IBS triggers — your high-stress days may be linked to lower scores.",
+  vegetables: "Soluble fibre (oats, bananas) tends to be gentler than insoluble fibre (raw veg) for IBS — worth experimenting.",
   meat: "Try a low-FODMAP breakfast this week and see if your score improves.",
-  medication:
-    "Some medications affect gut motility — track timing to spot patterns.",
+  medication: "Some medications affect gut motility — track timing to spot patterns.",
 };
 
-export const GENERIC_IBS_TIP =
-  "Eating at consistent times helps regulate gut transit — try logging your meal times this week.";
+export const GENERIC_IBS_TIP = "Eating at consistent times helps regulate gut transit — try logging your meal times this week.";
 
 export const TAG_OPTIONS: { id: string; label: string; emoji: string; category: "food" | "drink" | "lifestyle" | "symptom" }[] = [
   { id: "dairy", label: "Dairy", emoji: "🧀", category: "food" },
@@ -198,16 +192,14 @@ export const getTagCorrelations = (logs: PoopLog[]): TagCorrelation[] => {
       delta: Math.round(avgWith - avgWithout),
     });
   }
-  return result.sort(
-    (a, b) => Math.abs(b.delta) - Math.abs(a.delta) || b.count - a.count
-  );
+  return result.sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta) || b.count - a.count);
 };
 
 export interface StreakData {
   currentStreak: number;
   lastLogDate: string | null;
   longestStreak: number;
-  paused?: boolean; // true when 3+ consecutive no-movement days
+  paused?: boolean;
 }
 
 const PROFILE_KEY = "pooped_profile";
@@ -216,7 +208,6 @@ const STREAK_KEY = "pooped_streak";
 export const THEME_KEY = "pooped_theme";
 const WAITLIST_KEY = "pooped_waitlist";
 
-// ---------- Profile ----------
 export const getProfile = (): Profile | null => {
   try {
     const raw = localStorage.getItem(PROFILE_KEY);
@@ -229,7 +220,6 @@ export const saveProfile = (p: Profile) => {
   localStorage.setItem(PROFILE_KEY, JSON.stringify(p));
 };
 
-// ---------- Logs ----------
 export const getLogs = (): PoopLog[] => {
   try {
     const raw = localStorage.getItem(LOGS_KEY);
@@ -245,9 +235,6 @@ export const saveLog = (log: PoopLog) => {
   updateStreak();
 };
 
-// Local YYYY-MM-DD — using toISOString() rolls timezones east of UTC back
-// a day for late-evening logs (e.g. 11pm IST -> "yesterday" UTC), which
-// caused a mismatch with the calendar grid keys.
 const pad = (n: number) => String(n).padStart(2, "0");
 const dateToLocalStr = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 const toDateStr = (ts: number) => dateToLocalStr(new Date(ts));
@@ -258,7 +245,6 @@ export const getTodaysLogs = (): PoopLog[] => {
   return getLogs().filter((l) => toDateStr(l.timestamp) === today);
 };
 
-// ---------- Streak ----------
 export const getStreakData = (): StreakData => {
   try {
     const raw = localStorage.getItem(STREAK_KEY);
@@ -269,7 +255,6 @@ export const getStreakData = (): StreakData => {
 
 const updateStreak = () => {
   const logs = getLogs();
-  // Group by date: bristol values per day.
   const byDate: Record<string, number[]> = {};
   for (const l of logs) {
     const d = toDateStr(l.timestamp);
@@ -283,7 +268,6 @@ const updateStreak = () => {
 
   const data = getStreakData();
 
-  // Count consecutive no-movement days ending today/yesterday.
   const isNoMoveDay = (ds: string) => {
     const arr = byDate[ds];
     return !!arr && arr.length > 0 && arr.every((b) => b === 0);
@@ -300,19 +284,12 @@ const updateStreak = () => {
     }
   }
 
-  // Count streak: consecutive days with any log ending today or yesterday.
   let streak = 0;
   const cursor = new Date();
   if (!dates.has(today)) {
     if (dates.has(yStr)) cursor.setDate(cursor.getDate() - 1);
     else {
-      const next: StreakData = {
-        currentStreak: 0,
-        lastLogDate: today,
-        longestStreak: data.longestStreak,
-        paused: false,
-      };
-      localStorage.setItem(STREAK_KEY, JSON.stringify(next));
+      localStorage.setItem(STREAK_KEY, JSON.stringify({ currentStreak: 0, lastLogDate: today, longestStreak: data.longestStreak, paused: false }));
       return;
     }
   }
@@ -321,24 +298,12 @@ const updateStreak = () => {
     cursor.setDate(cursor.getDate() - 1);
   }
 
-  // Pause rule: if 3+ consecutive no-movement days, freeze the streak at
-  // its pre-pause length so it doesn't grow — but don't reset.
   const paused = noMoveRun >= 3;
-  const effectiveStreak = paused
-    ? Math.max(0, streak - noMoveRun)
-    : streak;
-
+  const effectiveStreak = paused ? Math.max(0, streak - noMoveRun) : streak;
   const longest = Math.max(data.longestStreak, effectiveStreak);
-  const next: StreakData = {
-    currentStreak: effectiveStreak,
-    lastLogDate: today,
-    longestStreak: longest,
-    paused,
-  };
-  localStorage.setItem(STREAK_KEY, JSON.stringify(next));
+  localStorage.setItem(STREAK_KEY, JSON.stringify({ currentStreak: effectiveStreak, lastLogDate: today, longestStreak: longest, paused }));
 };
 
-// ---------- Waitlist ----------
 export const getWaitlist = (): string[] => {
   try {
     const raw = localStorage.getItem(WAITLIST_KEY);
@@ -353,34 +318,16 @@ export const addToWaitlist = (email: string) => {
   localStorage.setItem(WAITLIST_KEY, JSON.stringify(list));
 };
 
-// ---------- Scoring ----------
-const BRISTOL_SCORES: Record<number, number> = {
-  1: 5, 2: 15, 3: 35, 4: 40, 5: 28, 6: 15, 7: 5,
-};
+const BRISTOL_SCORES: Record<number, number> = { 1: 5, 2: 15, 3: 35, 4: 40, 5: 28, 6: 15, 7: 5 };
 const COLOR_SCORES: Record<StoolColor, number> = {
-  medium_brown: 30,
-  dark_brown: 22,
-  light_brown: 20,
-  green: 12,
-  yellow: 8,
-  red: 4,
-  black: 4,
-  pale: 2,
+  medium_brown: 30, dark_brown: 22, light_brown: 20, green: 12, yellow: 8, red: 4, black: 4, pale: 2,
 };
-const FREQUENCY_SCORES: Record<number, number> = {
-  0: 8, 1: 20, 2: 18, 3: 12, 4: 5,
-};
+const FREQUENCY_SCORES: Record<number, number> = { 0: 8, 1: 20, 2: 18, 3: 12, 4: 5 };
 
-export const calculateGutScore = (
-  bristolType: number,
-  color: StoolColor,
-  frequencyToday: number
-): number => {
+export const calculateGutScore = (bristolType: number, color: StoolColor, frequencyToday: number): number => {
   const bristol = BRISTOL_SCORES[bristolType] ?? 5;
   const colorScore = COLOR_SCORES[color] ?? 5;
   const freq = FREQUENCY_SCORES[Math.min(frequencyToday, 4)] ?? 5;
-
-  // Streak consistency: how many of last 7 days have a log
   const logs = getLogs();
   const datesSet = new Set(logs.map((l) => toDateStr(l.timestamp)));
   let activeDays = 0;
@@ -390,19 +337,14 @@ export const calculateGutScore = (
     if (datesSet.has(toDateStr(d.getTime()))) activeDays++;
   }
   const streakBonus = Math.min(10, Math.floor(activeDays * 1.4));
-
   return Math.min(100, bristol + colorScore + freq + streakBonus);
 };
 
-export const isAlertColor = (c: StoolColor) =>
-  c === "red" || c === "black" || c === "pale";
+export const isAlertColor = (c: StoolColor) => c === "red" || c === "black" || c === "pale";
 
-// ---------- Aggregations ----------
 export const getCurrentGutScore = (): number => {
   const today = getTodaysLogs();
-  if (today.length > 0) {
-    return Math.round(today.reduce((s, l) => s + l.gutScore, 0) / today.length);
-  }
+  if (today.length > 0) return Math.round(today.reduce((s, l) => s + l.gutScore, 0) / today.length);
   const logs = getLogs();
   return logs[0]?.gutScore ?? 0;
 };
@@ -422,20 +364,13 @@ export const getWeeklyScores = (): { day: string; score: number; date: string }[
     d.setDate(d.getDate() - i);
     const ds = toDateStr(d.getTime());
     const dayLogs = logs.filter((l) => toDateStr(l.timestamp) === ds);
-    const score =
-      dayLogs.length > 0
-        ? Math.round(dayLogs.reduce((s, l) => s + l.gutScore, 0) / dayLogs.length)
-        : 0;
+    const score = dayLogs.length > 0 ? Math.round(dayLogs.reduce((s, l) => s + l.gutScore, 0) / dayLogs.length) : 0;
     out.push({ day: labels[d.getDay()], score, date: ds });
   }
   return out;
 };
 
-// ---------- Color metadata ----------
-export const COLOR_META: Record<
-  StoolColor,
-  { hex: string; label: string; short: string }
-> = {
+export const COLOR_META: Record<StoolColor, { hex: string; label: string; short: string }> = {
   medium_brown: { hex: "#7B4F2E", label: "Healthy brown", short: "Medium brown" },
   dark_brown: { hex: "#3D1F0D", label: "Dark brown", short: "Dark brown" },
   light_brown: { hex: "#C49A6C", label: "Light tan", short: "Light tan" },
@@ -446,10 +381,7 @@ export const COLOR_META: Record<
   pale: { hex: "#C8C0B0", label: "Pale / grey", short: "Pale" },
 };
 
-export const BRISTOL_META: Record<
-  number,
-  { label: string; emoji: string; ideal?: boolean }
-> = {
+export const BRISTOL_META: Record<number, { label: string; emoji: string; ideal?: boolean }> = {
   1: { label: "Hard pellets", emoji: "🪨" },
   2: { label: "Lumpy sausage", emoji: "🥜" },
   3: { label: "Cracked sausage", emoji: "🌽", ideal: true },
@@ -459,7 +391,6 @@ export const BRISTOL_META: Record<
   7: { label: "Liquid 💧", emoji: "💧" },
 };
 
-// One-time wipe of legacy v1 keys
 export const wipeLegacy = () => {
   try {
     localStorage.removeItem("pooped:logs");
@@ -467,11 +398,7 @@ export const wipeLegacy = () => {
   } catch {}
 };
 
-// How many times the user has logged "blood in the bowl" in the last N days.
-// Used to drive the escalated alert on Result when it happens 2+ times / week.
 export const countBloodInBowlLastNDays = (days = 7): number => {
   const cutoff = Date.now() - days * 24 * 60 * 60 * 1000;
-  return getLogs().filter(
-    (l) => l.timestamp >= cutoff && l.bloodPresence === "in_bowl"
-  ).length;
+  return getLogs().filter((l) => l.timestamp >= cutoff && l.bloodPresence === "in_bowl").length;
 };
