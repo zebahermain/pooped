@@ -1,9 +1,8 @@
 import { useEffect, useMemo, useState, useRef } from "react";
-import { Copy, Share2, ArrowLeft, Sun, Moon } from "lucide-react";
+import { Copy, Share2, ArrowLeft } from "lucide-react";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
-
 import {
   buildSplatUrl,
   buildWhatsAppLink,
@@ -48,7 +47,6 @@ export const SendSheet = ({
   onSent,
 }: Props) => {
   const { user } = useAuth();
-  
   const [stage, setStage] = useState<Stage>("pick");
   const [units, setUnits] = useState<number>(Math.max(MIN_UNITS, Math.round(reservoirUnits * 0.4)));
   const [launching, setLaunching] = useState(false);
@@ -253,7 +251,7 @@ function ScalePicker({
     const el = trackRef.current;
     if (!el) return;
     const r = el.getBoundingClientRect();
-    const padding = 20; // Enough padding to keep thumb from being cut off
+    const padding = 20; 
     const innerWidth = r.width - padding * 2;
     const relativeX = clientX - r.left - padding;
     const ratio = Math.max(0, Math.min(1, relativeX / innerWidth));
@@ -313,9 +311,8 @@ function ScalePicker({
             setDragging(true);
             setFromClientX(e.clientX);
           }}
-          className="relative h-16 rounded-2xl bg-muted/50 cursor-pointer touch-none overflow-hidden"
+          className="relative h-16 rounded-2xl bg-muted/50 cursor-pointer touch-none overflow-hidden px-4"
         >
-          {/* Fill width now accounts for the full track when displayPct is 1 */}
           <div
             className="absolute inset-y-0 left-0 transition-[width] duration-75"
             style={{
@@ -325,7 +322,6 @@ function ScalePicker({
             }}
           />
           
-          {/* Positions markers slightly away from the absolute edges so they stay visible */}
           <div className="absolute inset-0 px-6 flex justify-between items-center pointer-events-none">
             {ALL_STOPS.map((s) => (
               <div

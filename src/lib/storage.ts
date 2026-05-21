@@ -49,6 +49,86 @@ export interface PoopLog {
   notePrompt?: string;
 }
 
+export const FOOD_TAG_OPTIONS: { id: string; label: string; emoji: string }[] = [
+  { id: "dairy", label: "Dairy", emoji: "🧀" },
+  { id: "gluten", label: "Gluten", emoji: "🍞" },
+  { id: "spicy", label: "Spicy", emoji: "🌶️" },
+  { id: "fiber", label: "High fiber", emoji: "🥦" },
+  { id: "meat", label: "Red meat", emoji: "🥩" },
+  { id: "sugar", label: "Sugar", emoji: "🍬" },
+  { id: "fried", label: "Fried food", emoji: "🍟" },
+  { id: "fruit", label: "Fruit", emoji: "🍎" },
+  { id: "alcohol", label: "Alcohol", emoji: "🍺" },
+  { id: "coffee", label: "Coffee", emoji: "☕" },
+  { id: "water", label: "Lots of water", emoji: "💧" },
+];
+
+export const SYMPTOM_OPTIONS: { id: string; label: string; emoji: string }[] = [
+  { id: "bloating", label: "Bloating", emoji: "🎈" },
+  { id: "cramps", label: "Cramps", emoji: "⚡" },
+  { id: "nausea", label: "Nausea", emoji: "🤢" },
+  { id: "urgency", label: "Urgency", emoji: "🏃‍♂️" },
+];
+
+export const getFoodTagMeta = (id: string) => FOOD_TAG_OPTIONS.find((t) => t.id === id);
+export const getSymptomMeta = (id: string) => SYMPTOM_OPTIONS.find((t) => t.id === id);
+
+export interface FoodTrigger {
+  id: string;
+  label: string;
+  emoji: string;
+  avgDrop: number;
+  count: number;
+}
+
+export const getFoodTriggers = (logs: PoopLog[]): FoodTrigger[] => {
+  const recent = logs.slice(0, 30);
+  const tagged = recent.filter((l) => l.tags && l.tags.length > 0);
+  if (recent.length < 14 || tagged.length < 5) return [];
+  const overallAvg = recent.reduce((s, l) => s + l.gutScore, 0) / recent.length;
+  const out: FoodTrigger[] = [];
+  for (const f of FOOD_TAG_OPTIONS) {
+    const withTag = recent.filter((l) => l.tags?.includes(f.id));
+    if (withTag.length < 2) continue;
+    const avgWith = withTag.reduce((s, l) => s + l.gutScore, 0) / withTag.length;
+    const drop = Math.round(overallAvg - avgWith);
+    if (drop <= 0) continue;
+    out.push({
+      id: f.id,
+      label: f.label,
+      emoji: f.emoji,
+      avgDrop: drop,
+      count: withTag.length,
+    });
+  }
+  return out.sort((a, b) => b.avgDrop - a.avgDrop).slice(0, 3);
+};
+
+export const getTopFoodTagThisWeek = (logs: PoopLog[]): string | null => {
+  const cutoff = Date.now() - 7 * 24 * 60 * 60 * 1000;
+  const counts: Record<string, number> = {};
+  for (const l of logs) {
+    if (l.timestamp < cutoff) continue;
+    for (const id of l.tags || []) counts[id] = (counts[id] || 0) + 1;
+  }
+  const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+  return sorted[0]?.[0] ?? null;
+};
+
+export const IBS_TIPS: Record<string, string> = {
+  dairy: "Dairy showed up a lot this week — try a 3-day dairy-free stretch and see if your scores improve.",
+  caffeine: "Caffeine speeds up gut transit. Notice any pattern with your morning coffee?",
+  gluten: "Gluten popped up often this week — worth experimenting with a low-gluten breakfast and tracking the result.",
+  spicy: "Spicy foods can trigger urgency for some IBS folks — try logging right after spicy meals to spot a pattern.",
+  alcohol: "Alcohol is a common IBS trigger — see if cutting back this week shifts your scores.",
+  processed: "Processed foods tend to be low fibre and high additive — try one swap a day for whole foods.",
+  high_stress: "Stress is one of the top IBS triggers — your high-stress days may be linked to lower scores.",
+  vegetables: "Soluble fibre (oats, bananas) tends to be gentler than insoluble fibre (raw veg) for IBS — worth experimenting.",
+  meat: "Try a low-FODMAP breakfast this week and see if your score improves.",
+};
+
+export const GENERIC_IBS_TIP = "Eating at consistent times helps regulate gut transit — try logging your meal times this week.";
+
 export const TAG_OPTIONS: { id: string; label: string; emoji: string; category: "food" | "drink" | "lifestyle" | "symptom"; subcategory?: string }[] = [
   // Food - Grains
   { id: "rice", label: "Rice", emoji: "🍚", category: "food", subcategory: "Grains" },
