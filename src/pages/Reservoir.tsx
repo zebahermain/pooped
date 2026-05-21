@@ -147,7 +147,7 @@ const Reservoir = () => {
           <Button
             variant="outline"
             size="xl"
-            className="w-full gap-3 h-16 text-lg font-bold border-white/20 text-white hover:bg-white/5 active:scale-95 transition-all"
+            className="w-full gap-3 h-16 text-lg font-bold border-primary/20 text-muted-foreground hover:bg-muted active:scale-95 transition-all"
             onClick={() => navigate("/log")}
           >
             <Plus className="h-5 w-5 text-primary" />
