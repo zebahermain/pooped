@@ -225,7 +225,7 @@ const Onboarding = () => {
                 animate={{ y: "-10vh" }}
                 transition={{ duration: 10 + Math.random() * 20, repeat: Infinity, ease: "linear", delay: Math.random() * 10 }}
                 className="absolute text-2xl"
-              >💩</motion.div>
+              ><img src="/logo.png" alt="Pooped" className="w-64 h-auto" /></motion.div>
             ))}
           </div>
 
