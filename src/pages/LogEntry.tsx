@@ -162,8 +162,8 @@ const LogEntry = () => {
 
         {step === 1 && (
           <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
-            <h2 className="text-2xl font-bold text-foreground">Pick your stool type</h2>
-            <p className="mt-1 text-sm text-muted-foreground">Tap the one that looks closest.</p>
+            <h2 className="text-2xl font-bold text-foreground font-black tracking-tight">Pick your stool type</h2>
+            <p className="mt-1 text-sm text-muted-foreground font-medium">Tap the one that looks closest.</p>
             <div className="mt-6 flex flex-col gap-2.5">
               {Object.entries(BRISTOL_META).map(([typeStr, b]) => {
                 const type = parseInt(typeStr, 10);
@@ -176,12 +176,12 @@ const LogEntry = () => {
                     <span className="text-3xl">{b.emoji}</span>
                     <div className="flex-1">
                       <div className="flex items-center gap-2">
-                        <span className="font-semibold text-foreground">Type {type}</span>
+                        <span className="font-bold text-foreground">Type {type}</span>
                         {b.ideal && (
-                          <span className="rounded-full bg-success/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-success">Ideal</span>
+                          <span className="rounded-full bg-success/15 px-2 py-0.5 text-[10px] font-black uppercase tracking-wider text-success">Ideal</span>
                         )}
                       </div>
-                      <div className="text-xs text-muted-foreground">{b.label}</div>
+                      <div className="text-xs text-muted-foreground font-medium">{b.label}</div>
                     </div>
                   </button>
                 );
@@ -192,8 +192,8 @@ const LogEntry = () => {
 
         {step === 2 && !showContextCheck && (
           <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
-            <h2 className="text-2xl font-bold text-foreground">What color was it?</h2>
-            <p className="mt-1 text-sm text-muted-foreground">Brown is healthy.</p>
+            <h2 className="text-2xl font-bold text-foreground font-black tracking-tight">What color was it?</h2>
+            <p className="mt-1 text-sm text-muted-foreground font-medium">Brown is healthy.</p>
             <div className="mt-6 grid grid-cols-2 gap-3">
               {colorOrder.map((c) => {
                 const meta = COLOR_META[c];
@@ -204,7 +204,7 @@ const LogEntry = () => {
                     className="flex flex-col items-center gap-3 rounded-2xl border border-border/40 bg-card p-5 transition-all active:scale-[0.98] hover:bg-muted/30"
                   >
                     <div className="h-14 w-14 rounded-full border-2 border-border shadow-inner" style={{ backgroundColor: meta.hex }} />
-                    <span className="text-center text-xs font-bold text-foreground">{meta.label}</span>
+                    <span className="text-center text-xs font-black text-foreground">{meta.label}</span>
                   </button>
                 );
               })}
@@ -214,8 +214,8 @@ const LogEntry = () => {
 
         {step === 2 && showContextCheck && flaggedMeta && (
           <div className="animate-in fade-in duration-300">
-            <h2 className="text-2xl font-bold text-foreground">Quick check 🧐</h2>
-            <p className="mt-1 text-sm text-muted-foreground">{flaggedMeta.subtitle}</p>
+            <h2 className="text-2xl font-bold text-foreground font-black tracking-tight">Quick check 🧐</h2>
+            <p className="mt-1 text-sm text-muted-foreground font-medium">{flaggedMeta.subtitle}</p>
             <div className="mt-6 flex flex-wrap gap-2">
               {flaggedMeta.chips.map((chip) => {
                 const active = colorContextChips.includes(chip.id);
@@ -223,7 +223,10 @@ const LogEntry = () => {
                   <button
                     key={chip.id}
                     onClick={() => toggle(chip.id, colorContextChips, setColorContextChips)}
-                    className={`flex items-center gap-1.5 rounded-full border px-4 py-2 text-sm font-semibold transition-all ${active ? "border-primary bg-primary/10 text-primary" : "border-border bg-card text-muted-foreground"}`}
+                    className={cn(
+                      "flex items-center gap-1.5 rounded-full border px-4 py-2 text-sm font-bold transition-all",
+                      active ? "border-primary bg-primary/10 text-primary" : "border-border bg-card text-muted-foreground"
+                    )}
                   >
                     <span>{chip.emoji}</span>
                     <span>{chip.label}</span>
@@ -251,7 +254,7 @@ const LogEntry = () => {
                   setShowContextCheck(false);
                   setStep(3);
                 }}
-                className="w-full py-2 text-sm font-bold text-muted-foreground"
+                className="w-full py-2 text-sm font-black text-muted-foreground"
               >
                 None of these
               </button>
@@ -261,8 +264,8 @@ const LogEntry = () => {
 
         {step === 3 && (
           <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
-            <h2 className="text-2xl font-bold text-foreground">Anything worth noting? 👀</h2>
-            <p className="mt-1 text-sm text-muted-foreground font-medium">Helps us spot what affects your gut</p>
+            <h2 className="text-2xl font-black tracking-tight text-foreground">Anything worth noting? 👀</h2>
+            <p className="mt-1 text-sm text-muted-foreground font-bold">Helps us spot what affects your gut</p>
             
             <div className="mt-8 space-y-8">
               {/* Food Section */}
@@ -270,8 +273,8 @@ const LogEntry = () => {
                 <h3 className="text-[11px] font-black uppercase tracking-[0.2em] text-primary px-1">🍱 Food</h3>
                 {Object.entries(foodSubgroups).map(([sub, items]) => (
                   <div key={sub} className="space-y-3">
-                    <h4 className="text-[10px] font-bold text-muted-foreground/60 uppercase tracking-widest px-1">{sub}</h4>
-                    <div className="flex overflow-x-auto no-scrollbar gap-2 pb-1 px-1">
+                    <h4 className="text-[10px] font-black text-muted-foreground/60 uppercase tracking-[0.15em] px-1">{sub}</h4>
+                    <div className="flex flex-wrap gap-2 px-1">
                       {items.map((t) => {
                         const active = tags.includes(t.id);
                         return (
@@ -279,7 +282,7 @@ const LogEntry = () => {
                             key={t.id}
                             onClick={() => toggle(t.id, tags, setTags)}
                             className={cn(
-                              "flex shrink-0 items-center gap-2 rounded-full border px-4 py-2.5 text-sm font-bold transition-all active:scale-95",
+                              "flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-black transition-all active:scale-95",
                               active 
                                 ? "border-primary bg-primary text-primary-foreground shadow-lg shadow-primary/20" 
                                 : "border-border bg-card text-muted-foreground"
@@ -302,7 +305,7 @@ const LogEntry = () => {
                 return (
                   <div key={cat} className="space-y-4">
                     <h3 className="text-[11px] font-black uppercase tracking-[0.2em] text-primary px-1">{label}</h3>
-                    <div className="flex overflow-x-auto no-scrollbar gap-2 pb-1 px-1">
+                    <div className="flex flex-wrap gap-2 px-1">
                       {items.map((t) => {
                         const active = tags.includes(t.id);
                         return (
@@ -310,7 +313,7 @@ const LogEntry = () => {
                             key={t.id}
                             onClick={() => toggle(t.id, tags, setTags)}
                             className={cn(
-                              "flex shrink-0 items-center gap-2 rounded-full border px-4 py-2.5 text-sm font-bold transition-all active:scale-95",
+                              "flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-black transition-all active:scale-95",
                               active 
                                 ? "border-primary bg-primary text-primary-foreground shadow-lg shadow-primary/20" 
                                 : "border-border bg-card text-muted-foreground"
@@ -328,7 +331,7 @@ const LogEntry = () => {
 
               {/* Blood Section */}
               <div className="pt-6 border-t border-border/40">
-                <h3 className="text-sm font-black flex items-center gap-2 text-foreground px-1">
+                <h3 className="text-sm font-black flex items-center gap-2 text-foreground px-1 uppercase tracking-tight">
                    Any blood? <AlertCircle className="h-4 w-4 text-destructive" />
                 </h3>
                 <div className="mt-4 flex flex-wrap gap-2 px-1">
@@ -341,7 +344,7 @@ const LogEntry = () => {
                       key={opt.id}
                       onClick={() => setBloodPresence(opt.id as any)}
                       className={cn(
-                        "rounded-full border px-5 py-2.5 text-sm font-bold transition-all active:scale-95",
+                        "rounded-full border px-4 py-2 text-xs font-black transition-all active:scale-95",
                         bloodPresence === opt.id 
                           ? "border-primary bg-primary text-primary-foreground shadow-lg shadow-primary/20" 
                           : "border-border bg-card text-muted-foreground"
