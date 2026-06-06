@@ -27,7 +27,7 @@ export interface DeliveryStyleMeta {
 export const DELIVERY_STYLES: DeliveryStyleMeta[] = [
   // New intensity tiers (preferred order — low to high).
   { id: "drip", label: "Drip", emoji: "💧", description: "Just a tease" },
-  { id: "puff", label: "Puff", emoji: "💨", description: "Soft & cheeky" },
+  { id: "puff", label: "Splash", emoji: "💨", description: "Wet & cheeky" },
   { id: "blaze", label: "Blaze", emoji: "🔥", description: "Bring the heat" },
   { id: "eruption", label: "Eruption", emoji: "🌋", description: "Volcanic" },
   { id: "overload", label: "Overload", emoji: "⚡", description: "Total chaos" },

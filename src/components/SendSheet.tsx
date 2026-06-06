@@ -34,7 +34,7 @@ const MIN_UNITS = 20;
 // The 5 visual intensity levels
 const ALL_STOPS: Stop[] = [
   { pct: 0, emoji: "💧", label: "Drip", vibe: "just a tickle", style: "drip" },
-  { pct: 0.25, emoji: "💨", label: "Puff", vibe: "warming up", style: "puff" },
+  { pct: 0.25, emoji: "💨", label: "Splash", vibe: "warming up", style: "puff" },
   { pct: 0.5, emoji: "🌋", label: "Eruption", vibe: "this is gonna hurt", style: "eruption" },
   { pct: 0.75, emoji: "⚡", label: "Overload", vibe: "full carnage", style: "overload" },
   { pct: 1, emoji: "☠️", label: "Apocalypse", vibe: "they're done", style: "apocalypse" },

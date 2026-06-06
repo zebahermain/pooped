@@ -28,7 +28,7 @@ const TAUNTS = [
   "ARE YOU GONNA TAKE THAT??",
 ];
 
-type Phase = "black" | "incoming" | "drop" | "impact" | "face-in" | "face-hit" | "face-dizzy" | "face-out" | "settled";
+type Phase = "black" | "incoming" | "onyourface" | "drop" | "impact" | "face-in" | "face-hit" | "face-dizzy" | "face-out" | "settled";
 
 const updateMetaTags = (title: string, description: string, image: string) => {
   document.title = title;
@@ -71,10 +71,8 @@ const SplatPage = () => {
   const [showTaunt, setShowTaunt] = useState(false);
   const [variant, setVariant] = useState<"A" | "B">("A");
 
-  // Intensity scaling: 20 units is baseline (1.0), 100 units is "full" (2.5), Apocalypse (500) is MAX
   const intensity = useMemo(() => {
     if (!splat) return 1;
-    // Normalize: 20 -> 1, 100 -> 2.5, 500 -> 5
     return Math.max(0.8, Math.min(5, 1 + (splat.units - 20) / 50));
   }, [splat]);
 
@@ -108,13 +106,14 @@ const SplatPage = () => {
           setVariant(Math.random() < 0.5 ? "A" : "B");
           const sequence = [
             { p: "incoming", t: 50 },
-            { p: "drop", t: 550 },
-            { p: "impact", t: 1100 },
-            { p: "face-in", t: 1400 },
-            { p: "face-hit", t: 1750 },
-            { p: "face-dizzy", t: 2000 },
-            { p: "face-out", t: 3000 },
-            { p: "settled", t: 3400 },
+            { p: "onyourface", t: 850 },
+            { p: "drop", t: 1650 },
+            { p: "impact", t: 2200 },
+            { p: "face-in", t: 2500 },
+            { p: "face-hit", t: 2850 },
+            { p: "face-dizzy", t: 3100 },
+            { p: "face-out", t: 4100 },
+            { p: "settled", t: 4500 },
           ];
           sequence.forEach(({ p, t }) => setTimeout(() => setPhase(p as Phase), t));
         }
@@ -196,6 +195,27 @@ const SplatPage = () => {
               style={{ textShadow: `0 0 ${20 * intensity}px rgba(239,68,68,0.8)` }}
             >
               INCOMING 💩
+            </motion.h1>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {phase === "onyourface" && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black px-4"
+          >
+            <motion.h1
+              initial={{ scale: 0.5, y: 20 }}
+              animate={{ scale: [0.5, 1.2, 1], y: 0 }}
+              transition={{ duration: 0.4 }}
+              className="text-4xl font-black tracking-tighter text-orange-500 sm:text-6xl text-center uppercase leading-none"
+              style={{ textShadow: "0 0 40px rgba(249,115,22,0.6)" }}
+            >
+              ON YOUR<br />FACE! 💩
             </motion.h1>
           </motion.div>
         )}
