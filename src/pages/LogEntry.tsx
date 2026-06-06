@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import { AppShell } from "@/components/AppShell";
 import { HonestyCheck } from "@/components/HonestyCheck";
 import { toast } from "@/hooks/use-toast";
@@ -19,6 +20,7 @@ import {
 } from "@/lib/storage";
 import { applyLogToReservoir } from "@/lib/reservoir";
 import { isFlaggedColor, COLOR_CONTEXT } from "@/lib/colorContext";
+import { getSmartPrompt } from "@/lib/smartPrompt";
 import { creditReservoirBonus, evaluateAndMarkCompletion } from "@/lib/challenges";
 import { shouldShowHonestyCheck, markHonestyCheckStarted, markHonestyCheckFinished } from "@/lib/honesty";
 import { cn } from "@/lib/utils";
@@ -35,6 +37,7 @@ const colorOrder: StoolColor[] = [
 ];
 
 const TOTAL_STEPS = 3;
+const NOTES_MAX = 280;
 
 const LogEntry = () => {
   const navigate = useNavigate();
@@ -46,7 +49,10 @@ const LogEntry = () => {
   const [colorContextExplained, setColorContextExplained] = useState<boolean | null>(null);
   const [tags, setTags] = useState<string[]>([]);
   const [bloodPresence, setBloodPresence] = useState<BloodPresence | "none" | null>(null);
+  const [notes, setNotes] = useState("");
   const [honestyOpen, setHonestyOpen] = useState(false);
+
+  const notePrompt = useMemo(() => getSmartPrompt(), []);
 
   useEffect(() => {
     if (!getProfile()) navigate("/onboarding", { replace: true });
@@ -66,10 +72,12 @@ const LogEntry = () => {
       color,
       frequency: todayCount,
       tags: tags.length ? tags : undefined,
+      notes: notes.trim() || undefined,
       gutScore: score,
       colorContext: isFlaggedColor(color) ? colorContextChips : undefined,
       colorContextExplained: isFlaggedColor(color) ? colorContextExplained ?? false : undefined,
       bloodPresence: bloodPresence && bloodPresence !== "none" ? (bloodPresence as BloodPresence) : undefined,
+      notePrompt: notes.trim() ? notePrompt : undefined,
     };
     saveLog(log);
     markHonestyCheckFinished();
@@ -145,7 +153,7 @@ const LogEntry = () => {
 
   return (
     <AppShell>
-      <div className="pb-32 text-foreground">
+      <div className="pb-40 text-foreground">
         <header className="mb-6 flex items-center gap-3 pr-12">
           <button onClick={handleBack} className="rounded-full bg-card p-2 shadow-card border border-border">
             <ArrowLeft className="h-5 w-5" />
@@ -354,6 +362,21 @@ const LogEntry = () => {
                     </button>
                   ))}
                 </div>
+              </div>
+
+              {/* Notes Section */}
+              <div className="pt-6 border-t border-border/40 space-y-4 px-1">
+                <h3 className="text-sm font-black uppercase tracking-tight text-foreground">Notes</h3>
+                <Textarea
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value.slice(0, NOTES_MAX))}
+                  placeholder={notePrompt}
+                  className="min-h-[120px] rounded-[24px] border-border bg-card text-sm font-medium text-foreground focus-visible:ring-primary/20"
+                  maxLength={NOTES_MAX}
+                />
+                <p className="text-[10px] text-right font-bold text-muted-foreground/60 uppercase tracking-widest">
+                  {notes.length} / {NOTES_MAX}
+                </p>
               </div>
             </div>
           </div>
