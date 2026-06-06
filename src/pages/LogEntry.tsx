@@ -282,7 +282,7 @@ const LogEntry = () => {
                             key={t.id}
                             onClick={() => toggle(t.id, tags, setTags)}
                             className={cn(
-                              "flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-black transition-all active:scale-95",
+                              "flex shrink-0 items-center gap-2 rounded-full border px-4 py-2.5 text-sm font-bold transition-all active:scale-95",
                               active 
                                 ? "border-primary bg-primary text-primary-foreground shadow-lg shadow-primary/20" 
                                 : "border-border bg-card text-muted-foreground"
@@ -313,7 +313,7 @@ const LogEntry = () => {
                             key={t.id}
                             onClick={() => toggle(t.id, tags, setTags)}
                             className={cn(
-                              "flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-black transition-all active:scale-95",
+                              "flex shrink-0 items-center gap-2 rounded-full border px-4 py-2.5 text-sm font-bold transition-all active:scale-95",
                               active 
                                 ? "border-primary bg-primary text-primary-foreground shadow-lg shadow-primary/20" 
                                 : "border-border bg-card text-muted-foreground"
