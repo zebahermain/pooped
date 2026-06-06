@@ -4,8 +4,7 @@ import { X, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AppShell } from "@/components/AppShell";
 import { GutScoreRing } from "@/components/GutScoreRing";
-import { StreakStrip } from "@/components/StreakStrip";
-import { DailyChallengeCard } from "@/components/DailyChallengeCard";
+import { StreakCard } from "@/components/StreakCard";
 import { useAuth } from "@/hooks/useAuth";
 import {
   getCurrentGutScore,
@@ -71,7 +70,7 @@ const Home = () => {
     <AppShell>
       {showGuestBanner && (
         <div className="mb-6 relative rounded-2xl border border-border bg-card p-4 animate-in fade-in slide-in-from-top-2">
-          <button 
+          <button
             onClick={() => {
               setShowGuestBanner(false);
               sessionStorage.setItem("guest_banner_dismissed", "true");
@@ -102,7 +101,7 @@ const Home = () => {
         <GutScoreRing score={score} />
       </section>
 
-      <StreakStrip />
+      <StreakCard />
 
       {showSuspiciousNudge && (
         <div className="mt-8 flex items-start gap-3 rounded-3xl border border-warning/20 bg-warning/5 p-5 animate-in fade-in">
@@ -121,10 +120,6 @@ const Home = () => {
           </button>
         </div>
       )}
-
-      <div className="mt-8">
-        <DailyChallengeCard />
-      </div>
 
       <div className="mt-10 pb-10">
         <Button
