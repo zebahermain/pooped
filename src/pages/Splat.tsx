@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { TrendingUp } from "lucide-react";
+import { TrendingUp, RefreshCcw } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -15,11 +15,92 @@ import {
   type Splat,
 } from "@/lib/splats";
 
-const BUTTON_COPY = [
-  { t: 0, text: "Fill up to fire back →" },
-  { t: 5000, text: "Hit back before they think you're scared →" },
-  { t: 10000, text: "ARE YOU GONNA TAKE THAT?? →" },
-];
+type Phase = "black" | "incoming" | "drop" | "impact" | "aftermath" | "settled";
+
+interface TierConfig {
+  count: number;
+  speed: number;
+  text: string;
+  vibe: string;
+  shake: number;
+  flash: boolean;
+  vignette: string;
+  faceStart: "smile" | "open";
+  faceEnd: "blink" | "annoyed" | "hurt" | "dizzy" | "skull";
+  aftermathLinger: number;
+  scale: number;
+  slowMo?: boolean;
+}
+
+const TIER_MAP: Record<string, TierConfig> = {
+  drip: {
+    count: 1,
+    speed: 0.9,
+    text: "plip.",
+    vibe: "barely a tickle",
+    shake: 0,
+    flash: false,
+    vignette: "none",
+    faceStart: "smile",
+    faceEnd: "blink",
+    aftermathLinger: 1000,
+    scale: 0.5,
+  },
+  puff: { // Now Splash in UI, puff in code
+    count: 2,
+    speed: 0.4,
+    text: "pfft",
+    vibe: "a cheeky nudge",
+    shake: 2,
+    flash: false,
+    vignette: "rgba(0,0,0,0.2)",
+    faceStart: "smile",
+    faceEnd: "annoyed",
+    aftermathLinger: 2000,
+    scale: 0.7,
+  },
+  eruption: {
+    count: 5,
+    speed: 0.3,
+    text: "INCOMING!!",
+    vibe: "they'll feel that",
+    shake: 6,
+    flash: true,
+    vignette: "rgba(0,0,0,0.4)",
+    faceStart: "open",
+    faceEnd: "hurt",
+    aftermathLinger: 3000,
+    scale: 1,
+  },
+  overload: {
+    count: 8,
+    speed: 0.25,
+    text: "⚡ OVERLOAD ⚡",
+    vibe: "danger zone",
+    shake: 12,
+    flash: true,
+    vignette: "rgba(120,72,40,0.3)",
+    faceStart: "open",
+    faceEnd: "dizzy",
+    aftermathLinger: 4000,
+    scale: 1.3,
+    slowMo: true,
+  },
+  apocalypse: {
+    count: 15,
+    speed: 0.2,
+    text: "☢️ APOCALYPSE ☢️",
+    vibe: "leave no survivors",
+    shake: 20,
+    flash: true,
+    vignette: "rgba(0,0,0,0.8)",
+    faceStart: "open",
+    faceEnd: "skull",
+    aftermathLinger: 6000,
+    scale: 1.8,
+    slowMo: true,
+  },
+};
 
 const TAUNTS = [
   "Still just standing there? 😂",
@@ -28,146 +109,78 @@ const TAUNTS = [
   "ARE YOU GONNA TAKE THAT??",
 ];
 
-type Phase = "black" | "incoming" | "onyourface" | "drop" | "impact" | "face-in" | "face-hit" | "face-dizzy" | "face-out" | "settled";
-
-const updateMetaTags = (title: string, description: string, image: string) => {
-  document.title = title;
-  const setMeta = (property: string, content: string) => {
-    let tag = document.querySelector(`meta[property="${property}"]`);
-    if (!tag) {
-      tag = document.createElement('meta');
-      tag.setAttribute('property', property);
-      document.head.appendChild(tag);
-    }
-    tag.setAttribute('content', content);
-  };
-  setMeta('og:title', title);
-  setMeta('og:description', description);
-  setMeta('og:image', `${window.location.origin}${image}`);
-  setMeta('twitter:card', 'summary_large_image');
-  setMeta('twitter:title', title);
-  setMeta('twitter:description', description);
-  setMeta('twitter:image', `${window.location.origin}${image}`);
-};
-
 const SplatPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { session, loading: authLoading } = useAuth();
   const isRegistered = !!session && !authLoading;
-  const viewerUnits = useMemo(
-    () => (isRegistered ? getReservoirState().units : 0),
-    [isRegistered]
-  );
+  const viewerUnits = useMemo(() => (isRegistered ? getReservoirState().units : 0), [isRegistered]);
 
   const [splat, setSplat] = useState<Splat | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [splatsToday, setSplatsToday] = useState<number | null>(null);
-
   const [phase, setPhase] = useState<Phase>("black");
   const [elapsed, setElapsed] = useState(0);
   const [tauntIdx, setTauntIdx] = useState(0);
   const [showTaunt, setShowTaunt] = useState(false);
-  const [variant, setVariant] = useState<"A" | "B">("A");
+  const [variant] = useState(() => Math.random() < 0.5 ? "A" : "B");
+  const [replayKey, setReplayKey] = useState(0);
 
-  const intensity = useMemo(() => {
-    if (!splat) return 1;
-    return Math.max(0.8, Math.min(5, 1 + (splat.units - 20) / 50));
+  const config = useMemo(() => {
+    if (!splat) return TIER_MAP.eruption;
+    // Map style to config, fallback to eruption
+    const styleKey = splat.style === "puff" ? "puff" : splat.style;
+    return TIER_MAP[styleKey] || TIER_MAP.eruption;
   }, [splat]);
 
-  const rainCount = useMemo(() => Math.floor(15 * intensity), [intensity]);
-  const rainDrops = useMemo(
-    () =>
-      Array.from({ length: rainCount }, () => ({
-        left: Math.random() * 100,
-        delay: Math.random() * 0.8,
-        duration: 1.2 + Math.random() * 1.0,
-        size: Math.floor((20 + Math.random() * 20) * (intensity * 0.8)),
-      })),
-    [rainCount, intensity]
-  );
+  useEffect(() => {
+    if (!id) { setError("Invalid link"); setLoading(false); return; }
+    fetchSplat(id).then((s) => {
+      if (!s) setError("Splat not found");
+      else {
+        setSplat(s);
+        setPhase("incoming");
+      }
+      setLoading(false);
+    }).catch(e => { setError(e.message); setLoading(false); });
+    fetchSplatsToday().then(setSplatsToday);
+  }, [id, replayKey]);
 
   useEffect(() => {
-    if (!id) {
-      setError("Invalid link");
-      setLoading(false);
-      return;
+    if (phase === "incoming") {
+      const t = setTimeout(() => setPhase("drop"), config.text === "plip." ? 1000 : 800);
+      return () => clearTimeout(t);
     }
-    fetchSplat(id)
-      .then((s) => {
-        if (!s) setError("This splat doesn't exist (or was deleted).");
-        else {
-          setSplat(s);
-          const sender = s.sender_name || "Friend";
-          const title = `${sender} just hit you with ${s.units} units 💩`;
-          updateMetaTags(title, "Open to see the damage and retaliate", "/og/cannon.png");
-          
-          setVariant(Math.random() < 0.5 ? "A" : "B");
-          const sequence = [
-            { p: "incoming", t: 50 },
-            { p: "onyourface", t: 850 },
-            { p: "drop", t: 1650 },
-            { p: "impact", t: 2200 },
-            { p: "face-in", t: 2500 },
-            { p: "face-hit", t: 2850 },
-            { p: "face-dizzy", t: 3100 },
-            { p: "face-out", t: 4100 },
-            { p: "settled", t: 4500 },
-          ];
-          sequence.forEach(({ p, t }) => setTimeout(() => setPhase(p as Phase), t));
-        }
-        setLoading(false);
-      })
-      .catch((e) => {
-        setError(e instanceof Error ? e.message : "Couldn't load this splat.");
-        setLoading(false);
-      });
-    fetchSplatsToday().then(setSplatsToday);
-  }, [id]);
+    if (phase === "drop") {
+      const t = setTimeout(() => setPhase("impact"), config.speed * 1000 + 200);
+      return () => clearTimeout(t);
+    }
+    if (phase === "impact") {
+      const t = setTimeout(() => setPhase("aftermath"), 400);
+      return () => clearTimeout(t);
+    }
+    if (phase === "aftermath") {
+      const t = setTimeout(() => setPhase("settled"), config.aftermathLinger);
+      return () => clearTimeout(t);
+    }
+  }, [phase, config]);
 
   useEffect(() => {
     if (phase !== "settled") return;
     const start = Date.now();
     const i = setInterval(() => setElapsed(Date.now() - start), 250);
     const show = setTimeout(() => setShowTaunt(true), 8000);
-    const rotate = setInterval(() => setTauntIdx((prev) => (prev + 1) % TAUNTS.length), 5000);
-    return () => {
-      clearInterval(i);
-      clearTimeout(show);
-      clearInterval(rotate);
-    };
+    const rotate = setInterval(() => setTauntIdx((p) => (p + 1) % TAUNTS.length), 5000);
+    return () => { clearInterval(i); clearTimeout(show); clearInterval(rotate); };
   }, [phase]);
 
-  const buttonText = useMemo(() => {
-    if (!isRegistered || viewerUnits >= LAUNCH_THRESHOLD) {
-      const angry = [...BUTTON_COPY].reverse().find((b) => elapsed >= b.t)?.text;
-      return angry || "Retaliate 💩 →";
-    }
-    return "Fill up to fire back →";
-  }, [isRegistered, viewerUnits, elapsed]);
-
-  if (loading) {
-    return (
-      <div className="mx-auto flex min-h-screen max-w-md flex-col items-center justify-center bg-black px-6">
-        <div className="animate-bounce text-5xl">💩</div>
-        <p className="mt-4 text-sm text-white/60 font-medium">Loading your splat…</p>
-      </div>
-    );
-  }
-
-  if (error || !splat) {
-    return (
-      <div className="mx-auto flex min-h-screen max-w-md flex-col items-center justify-center bg-black px-6 text-center text-white">
-        <div className="text-6xl">🤷</div>
-        <h1 className="mt-4 text-2xl font-bold">Nothing here</h1>
-        <p className="mt-2 text-sm text-white/60">{error ?? "This splat doesn't exist."}</p>
-        <Link to="/" className="mt-6">
-          <Button variant="hero" size="lg">Visit Pooped</Button>
-        </Link>
-      </div>
-    );
-  }
+  if (loading) return <div className="flex h-screen items-center justify-center bg-black text-white text-5xl animate-bounce">💩</div>;
+  if (error || !splat) return <div className="flex h-screen flex-col items-center justify-center bg-black text-white p-6 text-center">
+    <div className="text-6xl mb-4">🤷</div>
+    <h1 className="text-2xl font-bold">Nothing here</h1>
+    <Link to="/" className="mt-6"><Button variant="hero" size="lg">Visit Pooped</Button></Link>
+  </div>;
 
   const styleMeta = getDeliveryStyleMeta(splat.style);
   const grade = getGrade(splat.units);
@@ -175,273 +188,258 @@ const SplatPage = () => {
 
   return (
     <div className="relative mx-auto min-h-screen w-full max-w-md overflow-hidden bg-black text-white">
-      <div className="absolute right-4 top-4 z-50">
+      <div className="absolute right-4 top-4 z-50 flex items-center gap-2">
+        {phase === "settled" && (
+          <button onClick={() => setReplayKey(k => k + 1)} className="p-2 rounded-full bg-white/10 text-white/60 hover:bg-white/20 transition-colors">
+            <RefreshCcw className="size-4" />
+          </button>
+        )}
         <ThemeToggle />
       </div>
 
+      {/* Vignette */}
+      <div className="pointer-events-none absolute inset-0 z-40 transition-opacity duration-1000" 
+           style={{ boxShadow: phase !== "black" ? `inset 0 0 150px ${config.vignette}` : 'none', opacity: phase === "settled" ? 0.3 : 1 }} />
+
+      {/* Flash */}
+      <AnimatePresence>
+        {phase === "impact" && config.flash && (
+          <motion.div initial={{ opacity: 1 }} animate={{ opacity: 0 }} transition={{ duration: 0.4 }} className="fixed inset-0 z-[100] bg-white/30 pointer-events-none" />
+        )}
+      </AnimatePresence>
+
+      {/* Incoming Text */}
       <AnimatePresence>
         {phase === "incoming" && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black"
-          >
-            <motion.h1
-              initial={{ scale: 0.6 }}
-              animate={{ scale: [0.6, 1 + (intensity * 0.1), 1] }}
-              transition={{ duration: 0.4 }}
-              className={`text-5xl font-black tracking-tight ${intensity > 2 ? 'text-red-600' : 'text-red-500'} sm:text-7xl`}
-              style={{ textShadow: `0 0 ${20 * intensity}px rgba(239,68,68,0.8)` }}
+          <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 1.2 }} className="fixed inset-0 z-50 flex items-center justify-center bg-black">
+            <motion.h1 
+              initial={{ filter: "blur(10px)" }}
+              animate={{ filter: "blur(0px)" }}
+              className={cn(
+                "text-5xl font-black tracking-tight text-center uppercase px-6",
+                config.text === "plip." ? "text-neutral-400 lowercase" : "text-red-500 italic"
+              )}
             >
-              INCOMING 💩
+              {config.text}
             </motion.h1>
           </motion.div>
         )}
       </AnimatePresence>
 
-      <AnimatePresence>
-        {phase === "onyourface" && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black px-4"
-          >
-            <motion.h1
-              initial={{ scale: 0.5, y: 20 }}
-              animate={{ scale: [0.5, 1.2, 1], y: 0 }}
-              transition={{ duration: 0.4 }}
-              className="text-4xl font-black tracking-tighter text-orange-500 sm:text-6xl text-center uppercase leading-none"
-              style={{ textShadow: "0 0 40px rgba(249,115,22,0.6)" }}
-            >
-              ON YOUR<br />FACE! 💩
-            </motion.h1>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
+      {/* Falling Poo(s) */}
       <AnimatePresence>
         {phase === "drop" && (
-          <motion.div
-            initial={{ y: "-100vh", scale: 0.5 + intensity * 0.2 }}
-            animate={{ y: "30vh", scale: 0.6 + intensity * 0.3 }}
-            transition={{ duration: 0.55, ease: [0.4, 0, 1, 1] }}
-            className="fixed left-1/2 top-0 z-40 -translate-x-1/2 text-9xl"
-          >
-            💩
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      <div className="pointer-events-none absolute inset-0 z-[6] overflow-hidden">
-        {rainDrops.map((d, i) => (
-          <span
-            key={i}
-            className="absolute leading-none"
-            style={{
-              left: `${d.left}%`,
-              top: "-10vh",
-              fontSize: `${d.size}px`,
-              animation: `emoji-rain ${d.duration}s ${d.delay}s linear forwards`,
-            }}
-          >
-            💩
-          </span>
-        ))}
-      </div>
-
-      <AnimatePresence>
-        {(phase === "impact" || phase === "settled") && (
-          <motion.div
-            initial={{ scale: 0, opacity: 0.9 }}
-            animate={{ scale: 2 + intensity * 1.5, opacity: 0 }}
-            transition={{ duration: 0.9, ease: "easeOut" }}
-            className="pointer-events-none fixed left-1/2 top-1/2 z-10 h-64 w-64 -translate-x-1/2 -translate-y-1/2 rounded-full"
-            style={{
-              background: "radial-gradient(circle, rgba(120,72,40,0.9) 0%, rgba(80,45,20,0.6) 40%, transparent 70%)",
-              filter: "blur(8px)",
-            }}
-          />
-        )}
-      </AnimatePresence>
-
-      <AnimatePresence>
-        {(["face-in", "face-hit", "face-dizzy", "face-out"] as Phase[]).includes(phase) && (
-          <motion.div
-            key="cartoon-face-stage"
-            initial={{ y: 0, opacity: 1 }}
-            animate={phase === "face-out" ? { y: "-120vh", opacity: 0 } : { y: 0, opacity: 1 }}
-            transition={{ type: "spring", stiffness: 180, damping: 20 }}
-            className={`fixed inset-x-0 top-0 z-30 flex items-center pt-24 ${variant === "B" ? "justify-end pr-8" : "justify-center"}`}
-          >
-            <div className="relative">
-              <motion.svg
-                viewBox="0 0 200 200"
-                width={160 + (intensity * 15)}
-                height={160 + (intensity * 15)}
-                initial={{ scale: 0, rotate: variant === "B" ? 15 : -20 }}
-                animate={{ scale: 1, rotate: phase === "face-hit" ? (variant === "B" ? [0, 18, -14, 8, 0] : [0, -15, 12, -8, 0]) : 0 }}
-                transition={{ type: "spring", stiffness: 240, damping: 14 }}
+          <div className="fixed inset-0 z-30 pointer-events-none">
+            {Array.from({ length: config.count }).map((_, i) => (
+              <motion.div
+                key={i}
+                initial={{ y: "-20vh", x: `calc(50% + ${(i - (config.count-1)/2) * 40}px)`, opacity: 0 }}
+                animate={{ y: "35vh", opacity: 1 }}
+                transition={{ 
+                  duration: config.speed, 
+                  delay: i * (config.slowMo ? 0.2 : 0.05),
+                  ease: config.text === "plip." ? "easeInOut" : [0.4, 0, 1, 1] 
+                }}
+                className="absolute text-7xl"
+                style={{ fontSize: `${64 * config.scale}px` }}
               >
-                <circle cx="100" cy="100" r="90" fill="#FCD34D" stroke="#1f2937" strokeWidth="4" />
-                {phase === "face-dizzy" || phase === "face-out" ? (
-                  <>
-                    <g stroke="#1f2937" strokeWidth="3" fill="none" strokeLinecap="round">
-                      <path d="M65 80 q-8 -8 0 -14 q12 -6 14 6 q2 14 -14 14 q-18 0 -14 -20" />
-                      <path d="M135 80 q-8 -8 0 -14 q12 -6 14 6 q2 14 -14 14 q-18 0 -14 -20" />
-                    </g>
-                    <path d="M70 140 q10 -10 20 0 q10 10 20 0 q10 -10 20 0" stroke="#1f2937" strokeWidth="4" fill="none" strokeLinecap="round" />
-                  </>
-                ) : (
-                  <>
-                    <circle cx="72" cy="85" r="7" fill="#1f2937" />
-                    <circle cx="128" cy="85" r="7" fill="#1f2937" />
-                    <line x1="78" y1="138" x2="122" y2="138" stroke="#1f2937" strokeWidth="5" strokeLinecap="round" />
-                  </>
-                )}
-                {(phase === "face-dizzy" || phase === "face-out") && (
-                  <g fill="#6b3a1a">
-                    <motion.ellipse cx="60" cy="115" rx={12 * intensity} ry={8 * intensity} initial={{ scale: 0 }} animate={{ scale: 1 }} />
-                    <motion.ellipse cx="135" cy="105" rx={10 * intensity} ry={7 * intensity} initial={{ scale: 0 }} animate={{ scale: 1 }} />
-                    <motion.ellipse cx="100" cy="60" rx={20 * intensity} ry={12 * intensity} initial={{ scale: 0 }} animate={{ scale: 1 }} />
-                  </g>
-                )}
-              </motion.svg>
-              <AnimatePresence>
-                {phase === "face-in" && (
-                  <motion.div
-                    initial={{ x: variant === "B" ? -500 : 400, y: variant === "B" ? 0 : -20, rotate: 0, scale: (variant === "B" ? 1.2 : 1) * intensity * 0.8 }}
-                    animate={{ x: 0, y: 0, rotate: variant === "B" ? -360 : 540, scale: (variant === "B" ? 1.3 : 1.1) * intensity * 0.8 }}
-                    exit={{ opacity: 0 }}
-                    transition={{ duration: 0.35, ease: [0.5, 0, 0.9, 0.5] }}
-                    className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-6xl"
-                  >💩</motion.div>
-                )}
-                {phase === "face-hit" && (
-                  <motion.div
-                    initial={{ scale: 0, opacity: 1 }}
-                    animate={{ scale: 1 + intensity * 0.5, opacity: 0 }}
-                    transition={{ duration: 0.45, ease: "easeOut" }}
-                    className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
-                  >
-                    <span className="text-4xl font-black text-amber-300 drop-shadow-[0_2px_0_rgba(0,0,0,0.6)]">
-                      {intensity > 2.5 ? "KABOOM!" : variant === "B" ? "SPLOOSH!" : "SPLAT!"}
-                    </span>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-          </motion.div>
+                💩
+              </motion.div>
+            ))}
+          </div>
         )}
       </AnimatePresence>
 
+      {/* Impact Splatter */}
+      <AnimatePresence>
+        {(phase === "impact" || phase === "aftermath") && (
+          <div className="fixed inset-0 z-30 pointer-events-none flex items-center justify-center pt-[10vh]">
+             {Array.from({ length: config.count * 3 }).map((_, i) => (
+               <motion.div
+                 key={i}
+                 initial={{ scale: 0, x: 0, y: 0 }}
+                 animate={{ 
+                   scale: [0, 1.5, 1], 
+                   x: (Math.random() - 0.5) * 200 * config.scale,
+                   y: (Math.random() - 0.5) * 150 * config.scale + (phase === "aftermath" ? 100 : 0)
+                 }}
+                 transition={{ duration: 0.6, delay: Math.random() * 0.2 }}
+                 className="absolute text-4xl"
+               >
+                 💩
+               </motion.div>
+             ))}
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Smiley Face Container */}
       <motion.div
         animate={phase === "impact" ? { 
-          x: [0, -8 * intensity, 7 * intensity, -5 * intensity, 4 * intensity, -2 * intensity, 0], 
-          y: [0, 4 * intensity, -5 * intensity, 3 * intensity, -2 * intensity, 1 * intensity, 0] 
-        } : { x: 0, y: 0 }}
-        transition={{ duration: 0.3 }}
-        className="relative z-20 mx-auto flex min-h-screen max-w-md flex-col px-4 pt-6"
+          x: [0, -config.shake, config.shake, -config.shake, 0],
+          rotate: [0, -2, 2, 0]
+        } : { x: 0 }}
+        className={cn(
+          "fixed inset-x-0 top-0 z-20 flex flex-col items-center pt-24 transition-transform duration-1000",
+          config.faceEnd === "skull" && phase === "settled" ? "translate-y-[120vh] rotate-[720deg]" : "translate-y-0"
+        )}
       >
-        <AnimatePresence>
-          {phase === "settled" && (
-            <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="flex justify-center">
-              <div className="rounded-full border border-orange-500/40 bg-orange-500/10 px-4 py-1.5 text-xs font-black tracking-wide text-orange-300 uppercase">
+        <div className="relative">
+          {/* Base Face */}
+          <motion.svg viewBox="0 0 200 200" width={180 * config.scale} height={180 * config.scale}>
+             <circle cx="100" cy="100" r="90" fill="#FCD34D" stroke="#1f2937" strokeWidth="4" />
+             {/* Expressions */}
+             <AnimatePresence mode="wait">
+               {phase === "aftermath" || phase === "settled" ? (
+                 <motion.g key="hurt-face" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                   {config.faceEnd === "annoyed" && (
+                     <>
+                        <path d="M60 85 q20 -5 40 0" stroke="#1f2937" strokeWidth="4" fill="none" />
+                        <path d="M100 85 q20 -5 40 0" stroke="#1f2937" strokeWidth="4" fill="none" />
+                        <path d="M75 145 q25 -10 50 0" stroke="#1f2937" strokeWidth="5" fill="none" />
+                     </>
+                   )}
+                   {config.faceEnd === "hurt" && (
+                     <>
+                        <path d="M65 75 l15 15 m0 -15 l-15 15" stroke="#1f2937" strokeWidth="4" />
+                        <path d="M120 75 l15 15 m0 -15 l-15 15" stroke="#1f2937" strokeWidth="4" />
+                        <motion.path d="M70 150 q30 -40 60 0" stroke="#1f2937" strokeWidth="6" fill="none" animate={{ scaleY: [1, 1.2, 1] }} transition={{ repeat: Infinity }} />
+                     </>
+                   )}
+                   {config.faceEnd === "dizzy" && (
+                     <>
+                       <g stroke="#1f2937" strokeWidth="3" fill="none">
+                         <path d="M65 80 q-8 -8 0 -14 q12 -6 14 6 q2 14 -14 14 q-18 0 -14 -20" />
+                         <path d="M135 80 q-8 -8 0 -14 q12 -6 14 6 q2 14 -14 14 q-18 0 -14 -20" />
+                       </g>
+                       <path d="M70 140 q10 -10 20 0 q10 10 20 0 q10 -10 20 0" stroke="#1f2937" strokeWidth="4" fill="none" />
+                     </>
+                   )}
+                   {config.faceEnd === "skull" && (
+                     <text x="100" y="140" fontSize="120" textAnchor="middle">💀</text>
+                   )}
+                   {config.faceEnd === "blink" && (
+                     <>
+                       <line x1="60" y1="85" x2="85" y2="85" stroke="#1f2937" strokeWidth="4" />
+                       <line x1="115" y1="85" x2="140" y2="85" stroke="#1f2937" strokeWidth="4" />
+                       <path d="M80 140 q20 5 40 0" stroke="#1f2937" strokeWidth="4" fill="none" />
+                     </>
+                   )}
+                 </motion.g>
+               ) : (
+                 <motion.g key="start-face">
+                   <circle cx="72" cy="85" r="8" fill="#1f2937" />
+                   <circle cx="128" cy="85" r="8" fill="#1f2937" />
+                   {config.faceStart === "open" ? (
+                     <circle cx="100" cy="140" r="15" fill="#1f2937" />
+                   ) : (
+                     <path d="M70 135 q30 20 60 0" stroke="#1f2937" strokeWidth="6" fill="none" strokeLinecap="round" />
+                   )}
+                 </motion.g>
+               )}
+             </AnimatePresence>
+          </motion.svg>
+
+          {/* Impact Marks */}
+          <AnimatePresence>
+            {(phase === "aftermath" || phase === "settled") && (
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                 <div className="grid grid-cols-3 gap-4">
+                    {Array.from({ length: config.count }).map((_, i) => (
+                      <motion.div 
+                        key={i} 
+                        initial={{ scale: 0 }} 
+                        animate={{ scale: 1 }} 
+                        transition={{ delay: i * 0.05 }}
+                        className="text-4xl"
+                        style={{ filter: phase === "aftermath" ? "none" : "blur(2px)", opacity: phase === "aftermath" ? 1 : 0.6 }}
+                      >💩</motion.div>
+                    ))}
+                 </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      </motion.div>
+
+      {/* Settled UI */}
+      <AnimatePresence>
+        {phase === "settled" && (
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="relative z-50 mx-auto flex min-h-screen max-w-md flex-col px-6 pt-6 pb-12">
+            <div className="flex justify-center mb-8">
+              <div className="rounded-full border border-orange-500/40 bg-orange-500/10 px-4 py-1.5 text-[10px] font-black tracking-widest text-orange-400 uppercase">
                 • 📈 {splatsToday ?? "..."} SPLATS LAUNCHED TODAY
               </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+            </div>
 
-        <AnimatePresence>
-          {phase === "settled" && (
-            <motion.div
-              initial={{ y: "100vh", opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ type: "spring", stiffness: 180, damping: 18, delay: 0.05 }}
-              className="mt-8 rounded-[32px] bg-neutral-900/90 p-8 text-center shadow-2xl ring-1 ring-white/5 backdrop-blur-xl"
-            >
-              <motion.div initial={{ scale: 0 }} animate={{ scale: 1, rotate: [0, -8, 8, 0] }} transition={{ type: "spring", stiffness: 220, delay: 0.15 }} className="mx-auto text-7xl">💩</motion.div>
-              <h1 className="mt-4 text-3xl font-black tracking-tight leading-tight uppercase">💥 {sender} just CANNON BLASTED you</h1>
-              <div className="mt-5 inline-flex items-center gap-2 rounded-full bg-amber-900/40 px-5 py-2.5 text-base font-black text-amber-400">
+            <div className="rounded-[40px] bg-neutral-900/90 p-8 text-center shadow-2xl ring-1 ring-white/5 backdrop-blur-xl">
+              <div className="text-7xl mb-6">💩</div>
+              <h1 className="text-3xl font-black tracking-tight leading-tight uppercase mb-4">💥 {sender} just CANNON BLASTED you</h1>
+              <div className="inline-flex items-center gap-2 rounded-full bg-amber-900/40 px-5 py-2.5 text-base font-black text-amber-400">
                 {splat.units} {grade} units 💩
               </div>
-              {styleMeta && (
-                <div className="mt-4">
-                  <span className="inline-flex items-center gap-1.5 rounded-full bg-neutral-800 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.15em] text-neutral-300">
-                    {styleMeta.emoji} {styleMeta.label}
-                  </span>
+              
+              {splat.style === 'apocalypse' && (
+                <div className="mt-6 flex justify-center">
+                   <div className="bg-gradient-to-r from-yellow-400 to-orange-500 text-black px-4 py-1.5 rounded-lg text-xs font-black uppercase tracking-tighter transform -rotate-2">
+                     Legendary Achievement
+                   </div>
                 </div>
               )}
-            </motion.div>
-          )}
-        </AnimatePresence>
+            </div>
 
-        <AnimatePresence>
-          {phase === "settled" && (
-            <div className="flex flex-col flex-1 pb-10">
-              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}>
-                <p className="mt-8 text-center text-base font-black text-white/90">
-                  Hello Friend…
-                </p>
-                <p className="mt-1 text-center text-sm font-bold text-neutral-400">
-                  You have <span className="text-orange-400">{viewerUnits}</span> units ready to fire back 💩
-                </p>
-              </motion.div>
+            <div className="flex flex-col flex-1 mt-8">
+              <p className="text-center text-base font-black text-white/90">Hello Friend…</p>
+              <p className="mt-1 text-center text-sm font-bold text-neutral-400">
+                You have <span className="text-orange-400">{viewerUnits}</span> units ready to fire back 💩
+              </p>
 
-              <motion.div initial={{ scale: 0, y: 30, opacity: 0 }} animate={{ scale: 1, y: 0, opacity: 1 }} transition={{ type: "spring", stiffness: 260, delay: 0.7 }}>
-                <button
-                  onClick={() => {
-                    const target = encodeURIComponent(sender);
-                    if (isRegistered) {
-                      if (viewerUnits >= LAUNCH_THRESHOLD) navigate(`/reservoir?target=${target}&send=1`);
-                      else {
-                        toast({ title: `Need ${LAUNCH_THRESHOLD} units to launch`, description: `Log a visit to fill up, then come back and fire at ${sender} 💩` });
-                        navigate(`/reservoir?target=${target}`);
-                      }
-                    } else {
-                      try { localStorage.setItem("pooped_pending_retaliate_target", sender); } catch {}
-                      navigate("/auth");
+              <button
+                onClick={() => {
+                  const target = encodeURIComponent(sender);
+                  if (isRegistered) {
+                    if (viewerUnits >= LAUNCH_THRESHOLD) navigate(`/reservoir?target=${target}&send=1`);
+                    else {
+                      toast({ title: `Need ${LAUNCH_THRESHOLD} units to launch`, description: `Log a visit to fill up, then come back and fire at ${sender} 💩` });
+                      navigate(`/reservoir?target=${target}`);
                     }
-                  }}
-                  className="mt-6 w-full rounded-full py-5 text-lg font-black text-black shadow-[0_0_40px_rgba(251,146,60,0.4)] transition-transform active:scale-95"
-                  style={{ background: "linear-gradient(90deg, #fb923c 0%, #fbbf24 100%)" }}
-                >
-                  <motion.span animate={{ scale: [1, 1.03, 1] }} transition={{ duration: 1.5, repeat: Infinity }} className="block">
-                    {buttonText}
-                  </motion.span>
-                </button>
-              </motion.div>
+                  } else {
+                    try { localStorage.setItem("pooped_pending_retaliate_target", sender); } catch {}
+                    navigate("/auth");
+                  }
+                }}
+                className="mt-6 w-full rounded-full py-5 text-lg font-black text-black shadow-[0_0_40px_rgba(251,146,60,0.4)] active:scale-95 transition-all"
+                style={{ background: "linear-gradient(90deg, #fb923c 0%, #fbbf24 100%)" }}
+              >
+                <motion.span animate={{ scale: [1, 1.03, 1] }} transition={{ duration: 1.5, repeat: Infinity }}>
+                  {buttonText}
+                </motion.span>
+              </button>
 
-              <div className="mt-6 flex h-6 items-center justify-center">
+              <div className="mt-6 h-6 flex justify-center">
                 <AnimatePresence mode="wait">
                   {showTaunt && (
-                    <motion.p key={tauntIdx} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} className="text-center text-xs font-black uppercase tracking-wider text-neutral-500">
+                    <motion.p key={tauntIdx} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} className="text-[10px] font-black uppercase tracking-widest text-neutral-500">
                       {TAUNTS[tauntIdx]}
                     </motion.p>
                   )}
                 </AnimatePresence>
               </div>
 
-              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1.1 }} className="mt-auto flex flex-col items-center gap-3 pt-12">
+              <div className="mt-auto flex flex-col items-center gap-3 pt-8">
                 <div className="flex -space-x-2">
-                  {[
-                    "linear-gradient(135deg,#f87171,#fbbf24)",
-                    "linear-gradient(135deg,#34d399,#60a5fa)",
-                    "linear-gradient(135deg,#a78bfa,#f472b6)",
-                  ].map((bg, i) => (
-                    <div key={i} className="h-8 w-8 rounded-full border-2 border-black" style={{ background: bg }} />
+                  {["#f87171","#34d399","#a78bfa"].map((c, i) => (
+                    <div key={i} className="h-8 w-8 rounded-full border-2 border-black" style={{ background: c }} />
                   ))}
                 </div>
                 <p className="text-[10px] font-black uppercase tracking-widest text-neutral-500">
                   Join <span className="text-neutral-300">847 others</span> who hit back today
                 </p>
-              </motion.div>
+              </div>
             </div>
-          )}
-        </AnimatePresence>
-      </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
