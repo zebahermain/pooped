@@ -23,31 +23,32 @@ export const GutScoreRing = ({ score, size = 208 }: GutScoreRingProps) => {
   return (
     <div className="flex justify-center w-full">
       <div className="relative" style={{ width: size, height: size }}>
-        <svg viewBox="0 0 200 200" className="w-full h-full -rotate-90">
+        {/* Increased viewBox and added overflow-visible to prevent shadow clipping */}
+        <svg viewBox="0 0 220 220" className="w-full h-full -rotate-90 overflow-visible">
           <circle
-            cx="100"
-            cy="100"
+            cx="110"
+            cy="110"
             r={r}
             fill="none"
             stroke="var(--muted)"
             strokeWidth="14"
           />
           <circle
-            cx="100"
-            cy="100"
+            cx="110"
+            cy="110"
             r={r}
             fill="none"
-            stroke="url(#scoreGrad)"
+            stroke="url(#scoreGradRing)"
             strokeWidth="14"
             strokeLinecap="round"
             strokeDasharray={`${dash} ${c}`}
             style={{
-              filter: "drop-shadow(0 0 12px oklch(0.74 0.18 55 / 0.6))",
+              filter: "drop-shadow(0 0 8px var(--ring-glow))",
               transition: "stroke-dasharray 1200ms cubic-bezier(0.34, 1.56, 0.64, 1)",
             }}
           />
           <defs>
-            <linearGradient id="scoreGrad" x1="0" y1="0" x2="1" y2="1">
+            <linearGradient id="scoreGradRing" x1="0" y1="0" x2="1" y2="1">
               <stop offset="0%" stopColor="oklch(0.7 0.2 45)" />
               <stop offset="100%" stopColor="oklch(0.82 0.16 70)" />
             </linearGradient>
