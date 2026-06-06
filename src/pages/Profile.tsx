@@ -91,7 +91,7 @@ const ProfilePage = () => {
   };
 
   return (
-    <AppShell showThemeToggle={false}>
+    <AppShell showThemeToggle={true}>
       <section className="flex items-center gap-4 py-6">
         <div className="size-20 rounded-[24px] bg-gradient-to-br from-orange-400 to-orange-600 shadow-lg shadow-orange-500/20 flex items-center justify-center text-4xl">
           <AvatarDisplay avatar={profile.avatar} size={48} />
