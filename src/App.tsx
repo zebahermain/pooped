@@ -10,8 +10,6 @@ import { syncProfileForUser } from "@/lib/profileSync";
 import { supabase } from "@/integrations/supabase/client";
 import Index from "./pages/Index.tsx";
 import Onboarding from "./pages/Onboarding.tsx";
-import LogEntry from "./pages/LogEntry.tsx";
-import NoMovement from "./pages/NoMovement.tsx";
 import Result from "./pages/Result.tsx";
 import History from "./pages/History.tsx";
 import Reservoir from "./pages/Reservoir.tsx";
@@ -111,9 +109,7 @@ const RootRouter = () => {
       <Route path="/auth" element={<AuthPage />} />
       <Route path="/confirm-email" element={<ConfirmEmail />} />
       <Route path="/splat/:id" element={<Splat />} />
-      <Route path="/log" element={<ProtectedRoute><LogEntry /></ProtectedRoute>} />
-      <Route path="/log/no-movement" element={<ProtectedRoute><NoMovement /></ProtectedRoute>} />
-      <Route path="/result/:score" element={<ProtectedRoute><Result /></ProtectedRoute>} />
+      <Route path="/result/:id" element={<ProtectedRoute><Result /></ProtectedRoute>} />
       <Route path="/history" element={<ProtectedRoute><History /></ProtectedRoute>} />
       <Route path="/reservoir" element={<ProtectedRoute><Reservoir /></ProtectedRoute>} />
       <Route path="/send" element={<ProtectedRoute><Send /></ProtectedRoute>} />

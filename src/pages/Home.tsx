@@ -1,34 +1,31 @@
 import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { X, Plus } from "lucide-react";
+import { X, Check, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AppShell } from "@/components/AppShell";
-import { GutScoreRing } from "@/components/GutScoreRing";
 import { StreakCard } from "@/components/StreakCard";
 import { useAuth } from "@/hooks/useAuth";
 import {
-  getCurrentGutScore,
+  createLog,
   getLogs,
   getProfile,
+  hasPoopedToday,
+  saveLog,
 } from "@/lib/storage";
 import {
+  applyLogToReservoir,
   getReservoirState,
   hasSeenFirstFill,
   markFirstFillSeen,
 } from "@/lib/reservoir";
-import {
-  hasSeenSuspiciousNudge,
-  hasSuspiciousPattern,
-  markSuspiciousNudgeSeen,
-} from "@/lib/honesty";
 
 const Home = () => {
   const navigate = useNavigate();
   const { session, loading } = useAuth();
-  const [score, setScore] = useState(0);
   const [profile, setProfile] = useState(getProfile());
-  const [showSuspiciousNudge, setShowSuspiciousNudge] = useState(false);
   const [showGuestBanner, setShowGuestBanner] = useState(false);
+  const [pooped, setPooped] = useState(hasPoopedToday());
+  const [logging, setLogging] = useState(false);
 
   useEffect(() => {
     const p = getProfile();
@@ -37,16 +34,12 @@ const Home = () => {
       return;
     }
     setProfile(p);
+    setPooped(hasPoopedToday());
     document.title = "Pooped — Your gut, gamified";
-    setScore(getCurrentGutScore());
 
     const r = getReservoirState();
     if (r.units > 0 && getLogs().length >= 1 && !hasSeenFirstFill()) {
       markFirstFillSeen();
-    }
-
-    if (!hasSeenSuspiciousNudge() && hasSuspiciousPattern()) {
-      setShowSuspiciousNudge(true);
     }
 
     if (!loading) {
@@ -59,9 +52,19 @@ const Home = () => {
     }
   }, [navigate, session, loading]);
 
-  const dismissSuspiciousNudge = () => {
-    markSuspiciousNudgeSeen();
-    setShowSuspiciousNudge(false);
+  // One tap = one log for today. Units go into the reservoir, then the
+  // Result screen plays the "you earned poop" fill animation.
+  const logPoop = async () => {
+    if (logging || hasPoopedToday()) return;
+    setLogging(true);
+    const log = createLog();
+    saveLog(log);
+    try {
+      await applyLogToReservoir();
+    } catch (e) {
+      console.error(e);
+    }
+    navigate(`/result/${log.id}`);
   };
 
   if (!profile) return null;
@@ -97,42 +100,40 @@ const Home = () => {
         </h1>
       </header>
 
-      <section className="flex flex-col items-center">
-        <GutScoreRing score={score} />
+      <section>
+        {pooped ? (
+          <div
+            className="flex w-full flex-col items-center justify-center gap-2 rounded-[32px] border border-border bg-card px-6 py-10 text-center shadow-sm"
+            data-testid="pooped-today-done"
+          >
+            <div className="flex size-14 items-center justify-center rounded-full bg-success/15">
+              <Check className="size-7 text-success" strokeWidth={3} />
+            </div>
+            <p className="mt-2 text-xl font-black text-foreground">You pooped today</p>
+            <p className="text-sm font-medium text-muted-foreground">
+              Come back tomorrow to earn more poop.
+            </p>
+          </div>
+        ) : (
+          <Button
+            variant="hero"
+            className="flex h-auto w-full flex-col gap-2 rounded-[32px] py-12 font-black shadow-[var(--shadow-glow)]"
+            style={{ background: "var(--gradient-primary)" }}
+            onClick={logPoop}
+            aria-busy={logging}
+            data-testid="pooped-today-button"
+          >
+            {logging ? (
+              <Loader2 className="size-12 animate-spin" />
+            ) : (
+              <span className="text-6xl leading-none" aria-hidden>💩</span>
+            )}
+            <span className="text-2xl">I pooped today</span>
+          </Button>
+        )}
       </section>
 
       <StreakCard />
-
-      {showSuspiciousNudge && (
-        <div className="mt-8 flex items-start gap-3 rounded-3xl border border-warning/20 bg-warning/5 p-5 animate-in fade-in">
-          <div className="text-2xl">🙏</div>
-          <div className="flex-1">
-            <p className="text-sm font-black text-foreground">Heads up</p>
-            <p className="mt-1 text-xs font-medium text-muted-foreground leading-relaxed">
-              Logging more than 3 times daily can skew your Gut Score.
-            </p>
-          </div>
-          <button
-            onClick={dismissSuspiciousNudge}
-            className="shrink-0 rounded-full h-8 w-8 flex items-center justify-center text-muted-foreground hover:text-foreground"
-          >
-            ✕
-          </button>
-        </div>
-      )}
-
-      <div className="mt-10 pb-10">
-        <Button
-          variant="hero"
-          size="xl"
-          className="w-full h-16 font-black text-lg rounded-[22px] gap-2 shadow-[var(--shadow-glow)]"
-          style={{ background: "var(--gradient-primary)" }}
-          onClick={() => navigate("/log")}
-        >
-          <Plus className="size-5" strokeWidth={3} />
-          Log a poop 💩
-        </Button>
-      </div>
     </AppShell>
   );
 };

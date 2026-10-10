@@ -4,12 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { AppShell } from "@/components/AppShell";
 import { StreakMonthCalendar } from "@/components/StreakMonthCalendar";
-import { PersonalityCard } from "@/components/PersonalityCard";
-import { ReportCard } from "@/components/ReportCard";
 import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { pushProfileToCloud } from "@/lib/profileSync";
-import { hasHonestLoggerBadge } from "@/lib/honesty";
 import { deleteAccount } from "@/lib/deleteAccount";
 import { AVATAR_OPTIONS, AvatarDisplay } from "@/lib/avatars";
 import {
@@ -20,34 +17,15 @@ import {
   AlertDialogDescription,
   AlertDialogFooter,
 } from "@/components/ui/alert-dialog";
-import { AlertTriangle, Loader2 } from "lucide-react";
+import { AlertTriangle, ChevronRight, Loader2 } from "lucide-react";
+import { getReservoirState } from "@/lib/reservoir";
 import {
-  getAverageScore,
   getLogs,
   getProfile,
   getStreakData,
   saveProfile,
-  type FrequencyPref,
-  type Goal,
   type Profile,
 } from "@/lib/storage";
-
-const goals: { id: Goal; label: string; emoji: string }[] = [
-  { id: "track_patterns", label: "Track patterns", emoji: "📊" },
-  { id: "understand_gut", label: "Understand my gut", emoji: "💩" },
-  { id: "improve_health", label: "Improve gut health", emoji: "🌱" },
-  { id: "manage_weight", label: "Manage my weight", emoji: "⚖️" },
-  { id: "manage_condition", label: "Managing IBS/condition", emoji: "🤒" },
-  { id: "curious", label: "Just curious", emoji: "👀" },
-];
-
-const freqs: { id: FrequencyPref; label: string }[] = [
-  { id: "once", label: "Once a day" },
-  { id: "two_three", label: "2-3 times a day" },
-  { id: "alternate", label: "Every alternate day" },
-  { id: "varies", label: "Varies a lot" },
-  { id: "irregular", label: "Varies" }, // Legacy
-];
 
 const ProfilePage = () => {
   const navigate = useNavigate();
@@ -70,9 +48,9 @@ const ProfilePage = () => {
 
   if (!profile) return null;
 
-  const totalLogs = getLogs().length;
+  const totalLogs = getLogs().filter((l) => !l.noMovement).length;
   const streak = getStreakData();
-  const avg = getAverageScore();
+  const units = getReservoirState().units;
   const created = new Date(profile.createdAt).toLocaleDateString(undefined, {
     month: "long", day: "numeric", year: "numeric",
   });
@@ -82,12 +60,6 @@ const ProfilePage = () => {
     setEditing(false);
     if (user) pushProfileToCloud(user.id).catch(console.error);
     toast({ title: "Profile saved" });
-  };
-
-  const toggleGoal = (id: Goal) => {
-    const current = profile.goals || [];
-    const next = current.includes(id) ? current.filter(g => g !== id) : [...current, id];
-    setProfile({ ...profile, goals: next });
   };
 
   return (
@@ -106,23 +78,11 @@ const ProfilePage = () => {
       <section className="mt-2 grid grid-cols-3 gap-3">
         <Stat label="Total logs" value={totalLogs} />
         <Stat label="Streak" value={`${streak.currentStreak}🔥`} />
-        <Stat label="Avg score" value={avg} />
+        <Stat label="Units" value={`${units}💩`} />
       </section>
       <p className="mt-4 text-center text-xs font-bold text-muted-foreground uppercase tracking-widest">
         🏆 Personal best: {streak.longestStreak} day streak
       </p>
-
-      {hasHonestLoggerBadge() && (
-        <section className="mt-6 flex items-start gap-4 rounded-3xl border border-success/20 bg-success/5 p-5">
-          <div className="text-3xl">🏅</div>
-          <div className="flex-1">
-            <h3 className="font-black text-foreground">Honest logger</h3>
-            <p className="mt-1 text-sm font-medium text-muted-foreground leading-relaxed">
-              Your data is clean — that makes your insights more accurate.
-            </p>
-          </div>
-        </section>
-      )}
 
       <section className="mt-10">
         <div className="mb-4 flex items-end justify-between px-1">
@@ -139,18 +99,21 @@ const ProfilePage = () => {
 
       <section className="mt-10">
         <div className="mb-4 px-1">
-          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary">Identity</p>
-          <h3 className="text-xl font-black tracking-tight">Your Gut Personality</h3>
+          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary">Your logs</p>
+          <h3 className="text-xl font-black tracking-tight">History</h3>
         </div>
-        <PersonalityCard />
-      </section>
-
-      <section className="mt-10">
-        <div className="mb-4 px-1">
-          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary">Insights</p>
-          <h3 className="text-xl font-black tracking-tight">Last Month's Report</h3>
-        </div>
-        <ReportCard />
+        <button
+          onClick={() => navigate("/history")}
+          className="flex w-full items-center justify-between rounded-3xl border border-border bg-card p-5 text-left shadow-sm transition-all active:scale-[0.99]"
+        >
+          <div>
+            <p className="font-black text-foreground">See every log</p>
+            <p className="mt-1 text-sm font-medium text-muted-foreground">
+              {totalLogs} {totalLogs === 1 ? "log" : "logs"} so far
+            </p>
+          </div>
+          <ChevronRight className="size-5 text-muted-foreground" />
+        </button>
       </section>
 
       <div className="mt-12 mb-6 flex items-center gap-4">
@@ -183,32 +146,12 @@ const ProfilePage = () => {
                 ))}
               </div>
             </div>
-            <div>
-              <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Goals</label>
-              <div className="mt-3 flex flex-wrap gap-2">
-                {goals.map((g) => (
-                  <button key={g.id} onClick={() => toggleGoal(g.id)} className={`rounded-full px-4 py-2 text-xs font-bold border transition-all ${(profile.goals || []).includes(g.id) ? "border-primary bg-primary/10 text-primary" : "border-border bg-muted/30 text-muted-foreground"}`}>
-                    {g.emoji} {g.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div>
-              <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Frequency</label>
-              <div className="mt-3 grid grid-cols-2 gap-2">
-                {freqs.map((f) => (
-                  <button key={f.id} onClick={() => setProfile({ ...profile, frequencyPref: f.id })} className={`rounded-xl border-2 p-3 text-left text-xs font-bold transition-all ${profile.frequencyPref === f.id ? "border-primary bg-primary/10" : "border-transparent bg-muted/30"}`}>
-                    {f.label}
-                  </button>
-                ))}
-              </div>
-            </div>
+
             <Button variant="hero" size="lg" className="w-full h-14 rounded-2xl font-black text-lg" onClick={save}>Save changes</Button>
           </div>
         ) : (
           <div className="mt-6 space-y-4">
-            <Row label="Goals" value={(profile.goals || []).map(gid => goals.find(g => g.id === gid)?.label).filter(Boolean).join(", ") || goals.find(g => g.id === profile.goal)?.label || "—"} />
-            <Row label="Frequency" value={freqs.find((f) => f.id === profile.frequencyPref)?.label || "—"} />
+            <Row label="Name" value={profile.name} />
           </div>
         )}
       </section>

@@ -15,7 +15,6 @@ import {
 } from "@/lib/splats";
 import { getRandomShareText } from "@/lib/shareMessages";
 import { getProfile } from "@/lib/storage";
-import { getCompletionForDate, acknowledgeCompletion } from "@/lib/challenges";
 
 interface Props {
   open: boolean;
@@ -86,11 +85,6 @@ export const SendSheet = ({
       });
       await drainReservoir(units);
       setResultSplat(splat);
-
-      const completion = getCompletionForDate();
-      if (completion && !completion.acknowledged) {
-        await acknowledgeCompletion(completion.date);
-      }
 
       setStage("share");
     } catch (e) {

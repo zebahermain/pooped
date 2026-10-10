@@ -9,7 +9,7 @@ export const SHARE_MESSAGE_TEMPLATES = [
   (s: string, u: number, _g: ReservoirGrade, l: string) => 
     `INCOMING! ${POOP} ${s} just declared war with ${u} units. Retaliate on Pooped: ${l}`,
   (s: string, u: number, _g: ReservoirGrade, l: string) => 
-    `Not a drill! ${POOP} ${s} hit you with ${u} units. Start your gut streak and launch one back: ${l}`,
+    `Not a drill! ${POOP} ${s} hit you with ${u} units. Start your streak and launch one back: ${l}`,
   (s: string, u: number, _g: ReservoirGrade, l: string) => 
     `You've been chosen! ${POOP} ${s} sent ${u} units your way. See the damage and join the game: ${l}`,
   (s: string, u: number, _g: ReservoirGrade, l: string) => 
