@@ -11,7 +11,6 @@ import {
   getGrade,
   getReservoirState,
   hasSeenLaunchTip,
-  LAUNCH_THRESHOLD,
   markLaunchTipSeen,
 } from "@/lib/reservoir";
 import { getProfile } from "@/lib/storage";
