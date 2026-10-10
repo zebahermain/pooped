@@ -1,4 +1,4 @@
-import { Home, PlusCircle, ListOrdered, User } from "lucide-react";
+import { Home, User } from "lucide-react";
 import { useEffect, useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
@@ -8,17 +8,17 @@ import {
   hasSeenLaunchDot,
 } from "@/lib/reservoir";
 
+// Logging happens from Home's "I pooped today" button; History lives under Profile.
 const tabs = [
   { to: "/", label: "Home", icon: Home },
-  { to: "/log", label: "Log", icon: PlusCircle },
   { to: "/reservoir", label: "Reservoir", emoji: "💩" },
-  { to: "/history", label: "History", icon: ListOrdered },
   { to: "/profile", label: "Profile", icon: User },
 ] as const;
 
 export const BottomNav = () => {
   const location = useLocation();
   const [showDot, setShowDot] = useState(false);
+  const onHistory = location.pathname.startsWith("/history");
 
   useEffect(() => {
     try {
@@ -53,11 +53,15 @@ export const BottomNav = () => {
               className={({ isActive }) =>
                 cn(
                   "relative flex flex-1 flex-col items-center gap-1.5 rounded-xl py-1 text-[10px] font-bold uppercase tracking-tight transition-all active:scale-90",
-                  isActive ? "text-primary" : "text-muted-foreground hover:text-foreground"
+                  isActive || (to === "/profile" && onHistory)
+                    ? "text-primary"
+                    : "text-muted-foreground hover:text-foreground"
                 )
               }
             >
-              {({ isActive }) => (
+              {({ isActive: navActive }) => {
+                const isActive = navActive || (to === "/profile" && onHistory);
+                return (
                 <>
                   {Icon ? (
                     <Icon
@@ -80,7 +84,8 @@ export const BottomNav = () => {
                     <span className="absolute right-1/4 top-0.5 h-2 w-2 rounded-full bg-destructive ring-2 ring-card animate-pulse" />
                   )}
                 </>
-              )}
+                );
+              }}
             </NavLink>
           );
         })}

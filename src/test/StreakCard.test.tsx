@@ -16,10 +16,6 @@ const makeLog = (
 ): storage.PoopLog => ({
   id: Math.random().toString(36).slice(2),
   timestamp: Date.now(),
-  bristolType: 4,
-  color: "medium_brown",
-  frequency: 1,
-  gutScore: 80,
   ...overrides,
 });
 

@@ -31,26 +31,20 @@ export const markLaunchTipSeen = () => {
   } catch {}
 };
 
-export const unitsForBristol = (bristolType: number): number => {
-  if (bristolType === 4) return 30;
-  if (bristolType === 3 || bristolType === 5) return 20;
-  if (bristolType === 2 || bristolType === 6) return 10;
-  return 5; // 1 or 7
-};
-
 export interface ReservoirGain {
   base: number;
-  colorBonus: number;
   streakMultiplier: number;
   total: number;
 }
 
-export const calcGainForLog = (log: PoopLog, streakDays: number): ReservoirGain => {
-  const base = unitsForBristol(log.bristolType);
-  const colorBonus = log.color === "medium_brown" ? 10 : 0;
+/** Units earned per "I pooped today" log, before the streak bonus. */
+export const UNITS_PER_LOG = 20;
+
+export const calcGainForLog = (streakDays: number): ReservoirGain => {
+  const base = UNITS_PER_LOG;
   const streakMultiplier = streakDays >= 7 ? 1.5 : 1;
-  const total = Math.round((base + colorBonus) * streakMultiplier);
-  return { base, colorBonus, streakMultiplier, total };
+  const total = Math.round(base * streakMultiplier);
+  return { base, streakMultiplier, total };
 };
 
 /** Max capacity = 500 + 100 per 30 unique logging days. */
@@ -140,11 +134,9 @@ export const clearPrevUnitsForBanner = () => {
  * the gain applied. Also stores the previous-units value so the Result
  * screen can render its "+X units added" banner with an accurate animation.
  */
-export const applyLogToReservoir = async (
-  log: PoopLog
-): Promise<{ state: ReservoirState; gain: ReservoirGain; isFirstEver: boolean }> => {
+export const applyLogToReservoir = async (): Promise<{ state: ReservoirState; gain: ReservoirGain; isFirstEver: boolean }> => {
   const streakDays = getStreakData().currentStreak;
-  const gain = calcGainForLog(log, streakDays);
+  const gain = calcGainForLog(streakDays);
 
   const logs = getLogs();
   const isFirstEver = logs.length === 1; // saveLog already inserted this log

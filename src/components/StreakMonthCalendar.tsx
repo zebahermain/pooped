@@ -33,7 +33,7 @@ export const StreakMonthCalendar = () => {
     const pad = (n: number) => String(n).padStart(2, "0");
     const key = (d: Date) =>
       `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-    const logged = new Set(logs.map((l) => key(new Date(l.ts))));
+    const logged = new Set(logs.filter((l) => !l.noMovement).map((l) => key(new Date(l.timestamp))));
     const cur = new Date();
     cur.setHours(0, 0, 0, 0);
     if (!logged.has(key(cur))) cur.setDate(cur.getDate() - 1); // grace if today unlogged
@@ -148,8 +148,8 @@ export const StreakMonthCalendar = () => {
                   : "#ffffff",
               }}
               title={
-                cell.avgScore !== null
-                  ? `${cell.date} · Gut Score ${cell.avgScore}${inStreak ? " · 🔥 Current streak" : ""}`
+                cell.logged
+                  ? `${cell.date} · Logged${inStreak ? " · 🔥 Current streak" : ""}`
                   : `${cell.date} · No log`
               }
             >
@@ -173,9 +173,7 @@ export const StreakMonthCalendar = () => {
       </div>
 
       <div className="mt-4 flex flex-wrap gap-x-4 gap-y-1 text-[10px] text-muted-foreground">
-        <Legend color={DAY_COLOR_HEX.green} label="≥ 70" />
-        <Legend color={DAY_COLOR_HEX.amber} label="40–69" />
-        <Legend color={DAY_COLOR_HEX.red} label="< 40" />
+        <Legend color={DAY_COLOR_HEX.green} label="Logged" />
         <Legend color={DAY_COLOR_HEX.grey} label="No log" />
         <Legend color="#F59E0B" label="🔥 Current streak" />
       </div>

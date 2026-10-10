@@ -46,7 +46,7 @@ const AuthPage = () => {
           Your gut, gamified.
         </p>
         <p className="mt-2 max-w-xs text-sm text-muted-foreground">
-          Sign in with Google to track patterns, build streaks, and meet your reservoir.
+          Sign in with Google to build streaks, fill your reservoir, and splat your friends.
         </p>
       </div>
 

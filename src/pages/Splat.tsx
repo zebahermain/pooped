@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
+import { cn } from "@/lib/utils";
 import { LAUNCH_THRESHOLD, getReservoirState } from "@/lib/reservoir";
 import {
   fetchSplat,
@@ -16,6 +17,14 @@ import {
 } from "@/lib/splats";
 
 type Phase = "black" | "incoming" | "drop" | "impact" | "aftermath" | "settled";
+
+// Retaliate button copy escalates the longer the receiver hesitates on the
+// settled screen (t = ms since settling).
+const BUTTON_COPY = [
+  { t: 0, text: "Retaliate 💩 →" },
+  { t: 5000, text: "Hit back before they think you're scared →" },
+  { t: 10000, text: "ARE YOU GONNA TAKE THAT?? →" },
+];
 
 interface TierConfig {
   count: number;
@@ -174,6 +183,12 @@ const SplatPage = () => {
     const rotate = setInterval(() => setTauntIdx((p) => (p + 1) % TAUNTS.length), 5000);
     return () => { clearInterval(i); clearTimeout(show); clearInterval(rotate); };
   }, [phase]);
+
+  // Signed-in viewers without enough units are nudged to fill up instead.
+  const buttonText = useMemo(() => {
+    if (isRegistered && viewerUnits < LAUNCH_THRESHOLD) return "Fill up to fire back →";
+    return [...BUTTON_COPY].reverse().find((b) => elapsed >= b.t)?.text ?? BUTTON_COPY[0].text;
+  }, [isRegistered, viewerUnits, elapsed]);
 
   if (loading) return <div className="flex h-screen items-center justify-center bg-black text-white text-5xl animate-bounce">💩</div>;
   if (error || !splat) return <div className="flex h-screen flex-col items-center justify-center bg-black text-white p-6 text-center">
