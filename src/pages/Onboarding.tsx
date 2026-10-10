@@ -26,11 +26,11 @@ const DEFAULT_FREQUENCY: FrequencyPref = "varies";
 const Onboarding = () => {
   const navigate = useNavigate();
   const { session, loading, signOut } = useAuth();
-  const [step, setStep] = useState<1 | 2 | 3>(1);
+  // Flow: reservoir intro -> name -> avatar -> "setting up your home" -> Home.
+  const [step, setStep] = useState<"reservoir" | 1 | 2 | "setup">("reservoir");
   const [name, setName] = useState("");
   const [avatar, setAvatar] = useState<AvatarKey>("avocado");
   const [checking, setChecking] = useState(true);
-  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     wipeLegacy();
@@ -65,7 +65,9 @@ const Onboarding = () => {
 
   const finish = async () => {
     if (!session || !name.trim()) return;
-    setSaving(true);
+    setStep("setup");
+    // Keep the loader up long enough to read, even when the save is instant.
+    const minDelay = new Promise((resolve) => setTimeout(resolve, 1500));
     try {
       const profile: Profile = {
         name: name.trim(),
@@ -92,12 +94,12 @@ const Onboarding = () => {
         }
         throw error;
       }
+      await minDelay;
       navigate("/", { replace: true });
     } catch (e) {
       console.error("Onboarding finish failed:", e);
+      setStep(2);
       toast({ title: "Couldn't save your profile", description: "Check your connection and try again." });
-    } finally {
-      setSaving(false);
     }
   };
 
@@ -110,8 +112,8 @@ const Onboarding = () => {
   }
 
   return (
-    <div className={`mx-auto flex min-h-screen w-full max-w-md flex-col ${step === 3 ? "bg-black text-white p-0" : "px-6 py-10"}`}>
-      {step !== 3 && (
+    <div className={`mx-auto flex min-h-screen w-full max-w-md flex-col ${step === "reservoir" ? "bg-black text-white p-0" : "px-6 py-10"}`}>
+      {(step === 1 || step === 2) && (
         <>
           <div className="absolute right-4 top-4">
             <ThemeToggle />
@@ -162,11 +164,18 @@ const Onboarding = () => {
               </button>
             ))}
           </div>
-          <Button variant="hero" size="xl" className="mt-auto w-full h-14 font-black" onClick={() => setStep(3)}>Continue →</Button>
+          <Button variant="hero" size="xl" className="mt-auto w-full h-14 font-black" onClick={finish}>Continue →</Button>
         </div>
       )}
 
-      {step === 3 && (
+      {step === "setup" && (
+        <div className="flex flex-1 flex-col items-center justify-center gap-4 animate-fade-in text-foreground">
+          <Loader2 className="h-10 w-10 animate-spin text-primary" />
+          <p className="text-lg font-bold">Setting up your home</p>
+        </div>
+      )}
+
+      {step === "reservoir" && (
         <div className="flex flex-1 flex-col items-center justify-center px-8 relative overflow-hidden bg-black text-white">
           {/* Subtle background poops */}
           <div className="absolute inset-0 pointer-events-none opacity-20">
@@ -243,10 +252,9 @@ const Onboarding = () => {
               variant="hero"
               size="xl"
               className="w-full h-16 font-black text-lg shadow-[0_0_40px_rgba(240,140,46,0.3)]"
-              disabled={saving}
-              onClick={finish}
+              onClick={() => setStep(1)}
             >
-              {saving ? <Loader2 className="h-5 w-5 animate-spin" /> : "Let's go 🚀"}
+              Let's go 🚀
             </Button>
           </motion.div>
         </div>
