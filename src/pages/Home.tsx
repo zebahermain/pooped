@@ -91,7 +91,7 @@ const Home = () => {
         </div>
       )}
 
-      <header className="mb-10">
+      <header className="mb-2">
         <p className="text-[10px] font-black uppercase tracking-[0.25em] text-muted-foreground">
           Welcome back
         </p>
@@ -100,7 +100,9 @@ const Home = () => {
         </h1>
       </header>
 
-      <section>
+      <StreakCard />
+
+      <section className="mt-8">
         {pooped ? (
           <div
             className="flex w-full flex-col items-center justify-center gap-2 rounded-[32px] border border-border bg-card px-6 py-10 text-center shadow-sm"
@@ -133,7 +135,6 @@ const Home = () => {
         )}
       </section>
 
-      <StreakCard />
     </AppShell>
   );
 };
