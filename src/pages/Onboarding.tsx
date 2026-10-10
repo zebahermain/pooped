@@ -3,43 +3,32 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { ToiletBowl } from "@/components/ToiletBowl";
 import { useAuth } from "@/hooks/useAuth";
+import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import {
   saveProfile,
   wipeLegacy,
   type FrequencyPref,
-  type Goal,
   type Profile,
 } from "@/lib/storage";
 import { AVATAR_OPTIONS, AvatarDisplay, type AvatarKey } from "@/lib/avatars";
 import { Loader2 } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 
-const goals: { id: Goal; label: string; emoji: string }[] = [
-  { id: "track_patterns", label: "Track patterns", emoji: "📊" },
-  { id: "understand_gut", label: "Understand my gut", emoji: "💩" },
-  { id: "improve_health", label: "Improve gut health", emoji: "🌱" },
-  { id: "manage_weight", label: "Manage my weight", emoji: "⚖️" },
-  { id: "manage_condition", label: "Managing IBS/condition", emoji: "🤒" },
-  { id: "curious", label: "Just curious", emoji: "👀" },
-];
-
-const freqs: { id: FrequencyPref; label: string }[] = [
-  { id: "once", label: "Once a day" },
-  { id: "two_three", label: "2-3 times a day" },
-  { id: "alternate", label: "Every alternate day" },
-  { id: "varies", label: "Varies a lot" },
-];
+// Onboarding no longer asks how often the user goes. `frequency_pref` is still
+// written because App.tsx and profileSync treat it as the "onboarding done"
+// flag (the handle_new_user trigger pre-fills `name`, so name alone isn't
+// enough). Users can change it later on the Profile screen.
+const DEFAULT_FREQUENCY: FrequencyPref = "varies";
 
 const Onboarding = () => {
   const navigate = useNavigate();
   const { session, loading, signOut } = useAuth();
-  const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
+  const [step, setStep] = useState<1 | 2 | 3>(1);
   const [name, setName] = useState("");
   const [avatar, setAvatar] = useState<AvatarKey>("avocado");
-  const [selectedGoals, setSelectedGoals] = useState<Goal[]>([]);
-  const [frequencyPref, setFrequencyPref] = useState<FrequencyPref | null>(null);
   const [checking, setChecking] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -74,31 +63,25 @@ const Onboarding = () => {
       });
   }, [navigate, session, loading]);
 
-  const toggleGoal = (id: Goal) => {
-    setSelectedGoals(prev => 
-      prev.includes(id) ? prev.filter(g => g !== id) : [...prev, id]
-    );
-  };
-
   const finish = async () => {
-    if (!session || !name.trim() || selectedGoals.length === 0 || !frequencyPref) return;
+    if (!session || !name.trim()) return;
     setSaving(true);
     try {
       const profile: Profile = {
         name: name.trim(),
         avatar,
-        goals: selectedGoals,
-        frequencyPref,
+        frequencyPref: DEFAULT_FREQUENCY,
         createdAt: Date.now(),
       };
       saveProfile(profile);
 
+      // Only columns that exist on public.profiles. The old upsert also sent
+      // `goals`, which has no column, so every save failed and "Let's go"
+      // silently did nothing.
       const { error } = await supabase.from("profiles").upsert({
         id: session.user.id,
         name: profile.name,
         avatar: profile.avatar,
-        goal: selectedGoals[0], // Keep for legacy column
-        goals: selectedGoals,
         frequency_pref: profile.frequencyPref,
       });
       if (error) {
@@ -112,6 +95,7 @@ const Onboarding = () => {
       navigate("/", { replace: true });
     } catch (e) {
       console.error("Onboarding finish failed:", e);
+      toast({ title: "Couldn't save your profile", description: "Check your connection and try again." });
     } finally {
       setSaving(false);
     }
@@ -126,15 +110,15 @@ const Onboarding = () => {
   }
 
   return (
-    <div className={`mx-auto flex min-h-screen w-full max-w-md flex-col ${step === 4 ? "bg-black text-white p-0" : "px-6 py-10"}`}>
-      {step !== 4 && (
+    <div className={`mx-auto flex min-h-screen w-full max-w-md flex-col ${step === 3 ? "bg-black text-white p-0" : "px-6 py-10"}`}>
+      {step !== 3 && (
         <>
           <div className="absolute right-4 top-4">
             <ThemeToggle />
           </div>
 
           <div className="mb-8 flex justify-center gap-2 pt-4">
-            {[1, 2, 3].map((i) => (
+            {[1, 2].map((i) => (
               <div
                 key={i}
                 className={`h-2 rounded-full transition-all ${i === step ? "w-8 bg-primary" : "w-2 bg-muted"}`}
@@ -146,9 +130,8 @@ const Onboarding = () => {
 
       {step === 1 && (
         <div className="flex flex-1 flex-col animate-fade-in">
-          <span className="text-xs font-semibold uppercase tracking-widest text-primary">Step 1 of 3</span>
+          <span className="text-xs font-semibold uppercase tracking-widest text-primary">Step 1 of 2</span>
           <h2 className="mt-2 text-3xl font-bold">What should we call you?</h2>
-          <p className="mt-2 text-muted-foreground text-sm font-medium">Change it if you like, then continue.</p>
           <Input
             value={name}
             onChange={(e) => setName(e.target.value)}
@@ -156,8 +139,18 @@ const Onboarding = () => {
             className="mt-6 h-14 rounded-2xl border-border bg-card text-base font-bold text-foreground"
             autoFocus
           />
-          <p className="mt-8 text-sm font-bold text-foreground">Choose avatar</p>
-          <div className="mt-3 grid grid-cols-3 gap-3">
+          <p className="mt-3 text-muted-foreground text-sm font-medium">
+            We use it to greet you, and it's the name your friends see when you splat them.
+          </p>
+          <Button variant="hero" size="xl" className="mt-auto w-full h-14 font-black" disabled={!name.trim()} onClick={() => setStep(2)}>Continue</Button>
+        </div>
+      )}
+
+      {step === 2 && (
+        <div className="flex flex-1 flex-col animate-fade-in text-foreground">
+          <span className="text-xs font-semibold uppercase tracking-widest text-primary">Step 2 of 2</span>
+          <h2 className="mt-2 text-3xl font-bold text-foreground">Choose your avatar</h2>
+          <div className="mt-6 grid grid-cols-3 gap-3">
             {AVATAR_OPTIONS.map((a) => (
               <button
                 key={a.key}
@@ -169,52 +162,11 @@ const Onboarding = () => {
               </button>
             ))}
           </div>
-          <Button variant="hero" size="xl" className="mt-auto w-full h-14 font-black" disabled={!name.trim()} onClick={() => setStep(2)}>Continue →</Button>
-        </div>
-      )}
-
-      {step === 2 && (
-        <div className="flex flex-1 flex-col animate-fade-in text-foreground">
-          <span className="text-xs font-semibold uppercase tracking-widest text-primary">Step 2 of 3</span>
-          <h2 className="mt-2 text-3xl font-bold text-foreground">What are your goals?</h2>
-          <p className="mt-2 text-muted-foreground text-sm font-medium">Pick all that apply</p>
-          <div className="mt-6 flex flex-col gap-3">
-            {goals.map((g) => (
-              <button
-                key={g.id}
-                onClick={() => toggleGoal(g.id)}
-                className={`flex items-center gap-4 rounded-2xl border-2 bg-card p-5 text-left transition-bounce ${selectedGoals.includes(g.id) ? "border-primary shadow-warm scale-[1.02]" : "border-transparent shadow-card"}`}
-              >
-                <span className="text-3xl">{g.emoji}</span>
-                <span className="font-bold">{g.label}</span>
-              </button>
-            ))}
-          </div>
-          <Button variant="hero" size="xl" className="mt-auto w-full h-14 font-black" disabled={selectedGoals.length === 0} onClick={() => setStep(3)}>Continue →</Button>
+          <Button variant="hero" size="xl" className="mt-auto w-full h-14 font-black" onClick={() => setStep(3)}>Continue →</Button>
         </div>
       )}
 
       {step === 3 && (
-        <div className="flex flex-1 flex-col animate-fade-in text-foreground">
-          <span className="text-xs font-semibold uppercase tracking-widest text-primary">Step 3 of 3</span>
-          <h2 className="mt-2 text-3xl font-bold text-foreground">How often do you poop?</h2>
-          <p className="mt-2 text-muted-foreground text-sm font-medium">No wrong answers.</p>
-          <div className="mt-6 flex flex-col gap-3">
-            {freqs.map((f) => (
-              <button
-                key={f.id}
-                onClick={() => setFrequencyPref(f.id)}
-                className={`rounded-2xl border-2 bg-card p-5 text-left font-bold transition-bounce ${frequencyPref === f.id ? "border-primary shadow-warm scale-[1.02]" : "border-transparent shadow-card"}`}
-              >
-                {f.label}
-              </button>
-            ))}
-          </div>
-          <Button variant="hero" size="xl" className="mt-auto w-full h-14 font-black" disabled={!frequencyPref} onClick={() => setStep(4)}>Continue →</Button>
-        </div>
-      )}
-
-      {step === 4 && (
         <div className="flex flex-1 flex-col items-center justify-center px-8 relative overflow-hidden bg-black text-white">
           {/* Subtle background poops */}
           <div className="absolute inset-0 pointer-events-none opacity-20">
@@ -236,11 +188,11 @@ const Onboarding = () => {
             className="mb-8"
           >
             <motion.div
-              animate={{ y: [0, -20, 0], scale: [1, 1.05, 1] }}
+              animate={{ y: [0, -12, 0], scale: [1, 1.03, 1] }}
               transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-              className="text-[120px] filter drop-shadow-[0_0_30px_rgba(240,140,46,0.5)]"
+              className="filter drop-shadow-[0_0_30px_rgba(240,140,46,0.5)]"
             >
-              💩
+              <ToiletBowl fillRatio={0.6} size={200} />
             </motion.div>
           </motion.div>
 
